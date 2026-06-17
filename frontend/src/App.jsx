@@ -6,13 +6,15 @@ import {
   Settings as SettingsIcon, 
   User, 
   Zap,
-  BookOpen
+  BookOpen,
+  LogOut
 } from 'lucide-react';
 
 import Dashboard from './pages/Dashboard.jsx';
 import Workspace from './pages/Workspace.jsx';
 import History from './pages/History.jsx';
 import Settings from './pages/Settings.jsx';
+import Auth from './pages/Auth.jsx';
 
 // Dữ liệu giả lập ban đầu để hiển thị đẹp mắt
 const mockInitialArticles = [
@@ -43,6 +45,11 @@ function App() {
   const [workspaceDefaults, setWorkspaceDefaults] = useState(null);
   const [activeArticle, setActiveArticle] = useState(null);
   
+  // Trạng thái đăng nhập
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('opticontent_auth') === 'true';
+  });
+
   // Quản lý trạng thái hồ sơ người dùng (avatar và tên hiển thị)
   const [userProfile, setUserProfile] = useState(() => {
     const saved = localStorage.getItem('opticontent_profile');
@@ -67,6 +74,22 @@ function App() {
   useEffect(() => {
     localStorage.setItem('opticontent_profile', JSON.stringify(userProfile));
   }, [userProfile]);
+
+  // Xử lý đăng nhập thành công
+  const handleLogin = (user) => {
+    setUserProfile(user);
+    setIsAuthenticated(true);
+    localStorage.setItem('opticontent_auth', 'true');
+    localStorage.setItem('opticontent_profile', JSON.stringify(user));
+  };
+
+  // Xử lý đăng xuất
+  const handleLogout = () => {
+    if (window.confirm('Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?')) {
+      setIsAuthenticated(false);
+      localStorage.removeItem('opticontent_auth');
+    }
+  };
 
   // Hàm Lưu bài viết
   const handleSaveArticle = (newArticle) => {
@@ -112,10 +135,15 @@ function App() {
     }
   };
 
+  // Nếu chưa đăng nhập, chỉ render màn hình Auth
+  if (!isAuthenticated) {
+    return <Auth onLogin={handleLogin} />;
+  }
+
   return (
     <div className="app-container">
       {/* Sidebar Navigation */}
-      <aside className="sidebar">
+      <aside className="sidebar" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <div>
           <div className="sidebar-logo">
             <Zap size={22} className="logo-icon" />
@@ -173,9 +201,28 @@ function App() {
           </nav>
         </div>
 
-        <div className="sidebar-footer">
-          <p>OptiContent v1.0.0</p>
-          <p>© 2026 AI Engine Powered</p>
+        <div>
+          <button 
+            className="menu-item"
+            style={{ 
+              width: '100%', 
+              textAlign: 'left', 
+              color: '#ef4444', 
+              border: 'none', 
+              background: 'none',
+              marginTop: '20px',
+              cursor: 'pointer'
+            }}
+            onClick={handleLogout}
+          >
+            <LogOut size={18} />
+            Đăng xuất
+          </button>
+          
+          <div className="sidebar-footer" style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginTop: '12px' }}>
+            <p>OptiContent v1.0.0</p>
+            <p>© 2026 AI Engine Powered</p>
+          </div>
         </div>
       </aside>
 
@@ -193,7 +240,7 @@ function App() {
                   style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }}
                 />
               ) : (
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContext: 'center', paddingLeft: '7px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <User size={14} style={{ color: 'var(--primary)' }} />
                 </div>
               )}
