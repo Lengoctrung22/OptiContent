@@ -1397,5 +1397,41 @@ input:checked + .slider:before {
   }
 }
 
+/* Animation transitions for Auth fields */
+.animate-field {
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+  max-height: 100px;
+  margin-bottom: 18px;
+  overflow: visible;
+}
+
+.animate-field.hidden {
+  opacity: 0;
+  max-height: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border: none;
+}
+
+@keyframes fadeInKey {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-key {
+  animation: fadeInKey 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+
 
 

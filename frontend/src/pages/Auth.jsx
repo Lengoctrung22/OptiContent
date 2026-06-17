@@ -100,7 +100,7 @@ const Auth = ({ onLogin }) => {
         <div className="auth-form-panel">
           <div className="auth-form-container">
             {/* Header */}
-            <div className="form-header">
+            <div className="form-header fade-in-key" key={isLogin ? 'login-header' : 'register-header'}>
               <h2>{isLogin ? 'Chào mừng quay trở lại!' : 'Bắt đầu dùng thử miễn phí'}</h2>
               <p>{isLogin ? 'Đăng nhập để tiếp tục sáng tạo cùng AI.' : 'Tạo tài khoản và bắt đầu viết bài chuyên nghiệp.'}</p>
             </div>
@@ -131,21 +131,19 @@ const Auth = ({ onLogin }) => {
             <form onSubmit={handleSubmit} className="auth-form">
               {error && <div className="auth-error-alert">{error}</div>}
 
-              {!isLogin && (
-                <div className="auth-form-group">
-                  <label>Họ và tên</label>
-                  <div className="auth-input-wrapper">
-                    <User size={16} className="auth-input-icon" />
-                    <input 
-                      type="text" 
-                      placeholder="Nhập họ và tên của bạn" 
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                    />
-                  </div>
+              <div className={`auth-form-group animate-field ${isLogin ? 'hidden' : ''}`}>
+                <label>Họ và tên</label>
+                <div className="auth-input-wrapper">
+                  <User size={16} className="auth-input-icon" />
+                  <input 
+                    type="text" 
+                    placeholder="Nhập họ và tên của bạn" 
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required={!isLogin}
+                  />
                 </div>
-              )}
+              </div>
 
               <div className="auth-form-group">
                 <label>Địa chỉ Email</label>
@@ -193,10 +191,10 @@ const Auth = ({ onLogin }) => {
                 {loading ? (
                   <span className="spinner-border">Đang xử lý...</span>
                 ) : (
-                  <>
+                  <div className="fade-in-key" key={isLogin ? 'btn-login' : 'btn-register'} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}>
                     <span>{isLogin ? 'Đăng nhập tài khoản' : 'Đăng ký ngay'}</span>
                     <ArrowRight size={16} />
-                  </>
+                  </div>
                 )}
               </button>
             </form>
