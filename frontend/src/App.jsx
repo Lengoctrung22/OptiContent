@@ -190,6 +190,21 @@ function App() {
               Thư viện bài viết
             </button>
 
+            {(userProfile.role === 'Admin' || userProfile.email === 'admin@opticontent.com' || userProfile.email === 'trongnv@gmail.com') && (
+              <button 
+                className={`menu-item ${activeScreen === 'admin' ? 'active' : ''}`}
+                style={{ fontWeight: '600' }}
+                onClick={() => {
+                  setActiveScreen('admin');
+                  setWorkspaceDefaults(null);
+                  setActiveArticle(null);
+                }}
+              >
+                <ShieldAlert size={18} />
+                Quản trị hệ thống
+              </button>
+            )}
+
             <button 
               className={`menu-item ${activeScreen === 'settings' ? 'active' : ''}`}
               onClick={() => {
@@ -201,21 +216,6 @@ function App() {
               <SettingsIcon size={18} />
               Cài đặt
             </button>
-
-            {(userProfile.role === 'Admin' || userProfile.email === 'admin@opticontent.com' || userProfile.email === 'trongnv@gmail.com') && (
-              <button 
-                className={`menu-item ${activeScreen === 'admin' ? 'active' : ''}`}
-                style={{ color: 'var(--primary)', fontWeight: '600' }}
-                onClick={() => {
-                  setActiveScreen('admin');
-                  setWorkspaceDefaults(null);
-                  setActiveArticle(null);
-                }}
-              >
-                <ShieldAlert size={18} />
-                Quản trị hệ thống
-              </button>
-            )}
           </nav>
         </div>
 
