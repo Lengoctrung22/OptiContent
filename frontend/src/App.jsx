@@ -7,7 +7,8 @@ import {
   User, 
   Zap,
   BookOpen,
-  LogOut
+  LogOut,
+  ShieldAlert
 } from 'lucide-react';
 
 import Dashboard from './pages/Dashboard.jsx';
@@ -15,6 +16,7 @@ import Workspace from './pages/Workspace.jsx';
 import History from './pages/History.jsx';
 import Settings from './pages/Settings.jsx';
 import Auth from './pages/Auth.jsx';
+import Admin from './pages/Admin.jsx';
 
 // Dữ liệu giả lập ban đầu để hiển thị đẹp mắt
 const mockInitialArticles = [
@@ -131,6 +133,7 @@ function App() {
       case 'workspace': return 'Phòng làm việc (Editor)';
       case 'history': return 'Thư viện bài viết';
       case 'settings': return 'Cài đặt';
+      case 'admin': return 'Quản trị hệ thống';
       default: return 'OptiContent';
     }
   };
@@ -198,6 +201,21 @@ function App() {
               <SettingsIcon size={18} />
               Cài đặt
             </button>
+
+            {(userProfile.role === 'Admin' || userProfile.email === 'admin@opticontent.com' || userProfile.email === 'trongnv@gmail.com') && (
+              <button 
+                className={`menu-item ${activeScreen === 'admin' ? 'active' : ''}`}
+                style={{ color: 'var(--primary)', fontWeight: '600' }}
+                onClick={() => {
+                  setActiveScreen('admin');
+                  setWorkspaceDefaults(null);
+                  setActiveArticle(null);
+                }}
+              >
+                <ShieldAlert size={18} />
+                Quản trị hệ thống
+              </button>
+            )}
           </nav>
         </div>
 
@@ -282,6 +300,10 @@ function App() {
               userProfile={userProfile}
               setUserProfile={setUserProfile}
             />
+          )}
+
+          {activeScreen === 'admin' && (
+            <Admin />
           )}
         </div>
       </main>
