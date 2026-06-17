@@ -90,6 +90,8 @@ function App() {
     if (window.confirm('Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?')) {
       setIsAuthenticated(false);
       localStorage.removeItem('opticontent_auth');
+      localStorage.removeItem('opticontent_profile');
+      localStorage.removeItem('token');
     }
   };
 

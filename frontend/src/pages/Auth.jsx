@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Zap, Mail, Lock, User, ArrowRight, Eye, EyeOff, CheckCircle2, Sparkles, TrendingUp, ShieldCheck } from 'lucide-react';
+import api from '../services/api.js';
 
 const Auth = ({ onLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -12,34 +13,81 @@ const Auth = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
+    try {
       if (isLogin) {
-        if (email.trim() && password.trim()) {
+        // Gọi API Đăng nhập thực tế
+        const response = await api.post('/auth/login', { email, password });
+        
+        if (response.data && response.data.success) {
+          // Lưu JWT token vào localStorage
+          localStorage.setItem('token', response.data.token);
+          
+          // Chuyển đổi trạng thái đăng nhập cho App.jsx
           onLogin({
-            name: email.split('@')[0] === 'trongnv' ? 'Nguyễn Văn Trọng' : email.split('@')[0],
-            email: email,
-            avatar: ''
+            name: response.data.user.fullName,
+            email: response.data.user.email,
+            avatar: response.data.user.avatar || '',
+            role: response.data.user.role,
           });
-        } else {
-          setError('Vui lòng điền đầy đủ email và mật khẩu.');
         }
       } else {
-        if (name.trim() && email.trim() && password.trim()) {
-          alert('Đăng ký tài khoản thành công! Hãy đăng nhập bằng tài khoản mới.');
+        // Gọi API Đăng ký tài khoản thực tế
+        const response = await api.post('/auth/register', { 
+          fullName: name, 
+          email, 
+          password 
+        });
+
+        if (response.data && response.data.success) {
+          alert('Đăng ký tài khoản thành công! Hãy đăng nhập bằng tài khoản mới của bạn.');
           setIsLogin(true);
           setName('');
           setPassword('');
-        } else {
-          setError('Vui lòng nhập đầy đủ tất cả thông tin yêu cầu.');
         }
       }
-    }, 1200);
+    } catch (err) {
+      // Hiển thị thông báo lỗi chi tiết từ backend trả về
+      const errorMsg = err.response?.data?.message || 'Kết nối đến máy chủ thất bại!';
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLoginMock = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      // Tạo mock dữ liệu Google OAuth giống như khi dùng Google SDK thành công
+      const mockGooglePayload = {
+        email: `google_user_${Math.floor(Math.random() * 10000)}@gmail.com`,
+        name: `Google User ${Math.floor(Math.random() * 100)}`,
+        googleId: `g_${Math.random().toString(36).substring(2, 11)}`,
+        avatar: '',
+      };
+      
+      const response = await api.post('/auth/google', mockGooglePayload);
+      
+      if (response.data && response.data.success) {
+        localStorage.setItem('token', response.data.token);
+        onLogin({
+          name: response.data.user.fullName,
+          email: response.data.user.email,
+          avatar: response.data.user.avatar || '',
+          role: response.data.user.role,
+        });
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'Lỗi khi đăng nhập bằng Google!';
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -209,7 +257,7 @@ const Auth = ({ onLogin }) => {
               <button 
                 type="button" 
                 className="social-btn"
-                onClick={() => onLogin({ name: 'Google User', email: 'google@gmail.com', avatar: '' })}
+                onClick={handleGoogleLoginMock}
               >
                 <svg style={{ width: '18px', height: '18px' }} viewBox="0 0 24 24">
                   <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.68 1.54 14.98 1 12 1 7.35 1 3.39 3.65 1.5 7.5l3.86 3C6.27 7.59 8.92 5.04 12 5.04z"/>
