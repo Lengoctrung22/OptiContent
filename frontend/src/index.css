@@ -15,9 +15,9 @@
   --border-color: #e2e8f0;
   --border-focus: rgba(79, 70, 229, 0.25);
   
-  --text-primary: #1e293b;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
+  --text-primary: #0f172a; /* Slate 900 - Đậm hơn 1.5 lần so với #1e293b để dễ đọc */
+  --text-secondary: #334155; /* Slate 700 - Đậm hơn so với #475569 */
+  --text-muted: #57657a; /* Slate 600 - Đậm hơn nhiều so với #94a3b8 */
   
   --success: #10b981;
   --danger: #ef4444;
@@ -98,9 +98,9 @@ body {
   gap: 12px;
   padding: 12px;
   border-radius: 8px;
-  color: #94a3b8;
+  color: #cbd5e1; /* Bắt mắt và tương phản cao hơn so với #94a3b8 */
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600; /* Font-weight đậm hơn (từ 500 lên 600) giúp người bị cận dễ nhìn thấy */
   cursor: pointer;
   transition: all 0.2s ease;
   background: transparent;
@@ -111,7 +111,7 @@ body {
 
 .menu-item:hover {
   background-color: rgba(255, 255, 255, 0.05);
-  color: #f8fafc;
+  color: #ffffff; /* Trắng hoàn toàn để dễ nhìn */
 }
 
 .menu-item.active {
@@ -124,7 +124,7 @@ body {
   padding-top: 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   font-size: 11px;
-  color: #64748b;
+  color: #94a3b8; /* Đổi thành màu sáng hơn để đọc được trên nền tối */
   text-align: center;
 }
 
