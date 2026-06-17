@@ -109,7 +109,7 @@ const seedDatabase = async () => {
       {
         name: 'Nguyễn Văn Trọng',
         email: 'trongnv@gmail.com',
-        password: '123456',
+        password: '12345678',
         role: 'User',
         status: 'Active',
         currentPlan: freePlan._id,
@@ -118,7 +118,7 @@ const seedDatabase = async () => {
       {
         name: 'Trần Thị Mai',
         email: 'maitt@gmail.com',
-        password: '123456',
+        password: '12345678',
         role: 'User',
         status: 'Active',
         currentPlan: freePlan._id,
@@ -127,7 +127,7 @@ const seedDatabase = async () => {
       {
         name: 'Phạm Minh Hoàng',
         email: 'hoangpm@gmail.com',
-        password: '123456',
+        password: '12345678',
         role: 'Creator',
         status: 'Active',
         currentPlan: plans.find((p) => p.slug === 'creator')._id,
@@ -136,7 +136,7 @@ const seedDatabase = async () => {
       {
         name: 'Hoàng Anh Đức',
         email: 'ducha@gmail.com',
-        password: '123456',
+        password: '12345678',
         role: 'Agency',
         status: 'Active',
         currentPlan: plans.find((p) => p.slug === 'agency')._id,
@@ -168,7 +168,7 @@ const seedDatabase = async () => {
     console.log('   - 5 Tài khoản (1 Admin + 4 Users)');
     console.log('   - 3 Log hệ thống');
     console.log('\n📧 Tài khoản Admin: admin@opticontent.com / admin123');
-    console.log('📧 Tài khoản User:  trongnv@gmail.com / 123456\n');
+    console.log('📧 Tài khoản User:  trongnv@gmail.com / 12345678\n');
 
     await mongoose.connection.close();
     process.exit(0);
