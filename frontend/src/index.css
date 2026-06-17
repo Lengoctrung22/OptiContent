@@ -1033,54 +1033,174 @@ input:checked + .slider:before {
   border-style: solid;
 }
 
-/* Auth Screen Styling */
-.auth-container {
+/* Auth Screen Styling - Split Layout */
+.auth-page-container {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: radial-gradient(circle at 50% 50%, #ffffff 0%, #f3f4f6 100%);
-  padding: 20px;
+  background-color: #f8fafc;
+  background-image: radial-gradient(circle at 10% 20%, rgba(244, 244, 245, 0.5) 0%, rgba(228, 228, 231, 0.2) 90%);
+  padding: 24px;
 }
 
-.auth-card {
+.auth-split-box {
+  display: flex;
   background-color: #ffffff;
   border: 1px solid var(--border-color);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
-  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+  border-radius: 20px;
   width: 100%;
-  max-width: 440px;
-  padding: 40px;
-  display: flex;
-  flex-direction: column;
+  max-width: 1040px;
+  min-height: 640px;
+  overflow: hidden;
 }
 
-.auth-logo {
+/* Cột Trái - Giới thiệu */
+.auth-info-panel {
+  flex: 1.1;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  padding: 60px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  margin-bottom: 30px;
-  text-align: center;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
 }
 
-.auth-logo .logo-icon {
-  color: var(--primary);
-  background-color: var(--primary-light);
-  padding: 8px;
-  border-radius: 10px;
-  margin-bottom: 12px;
+.auth-info-panel::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  right: -20%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0) 70%);
+  border-radius: 50%;
+  filter: blur(40px);
 }
 
-.auth-logo h2 {
+.auth-info-content {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  z-index: 2;
+}
+
+.info-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 40px;
+}
+
+.info-brand-icon {
+  color: #6366f1;
+}
+
+.info-brand h1 {
   font-size: 24px;
   font-weight: 800;
-  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.info-headline {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.25;
+  margin-bottom: 16px;
+  letter-spacing: -0.5px;
+  background: linear-gradient(to right, #ffffff, #e2e8f0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.info-subheadline {
+  font-size: 15px;
+  color: #94a3b8;
+  line-height: 1.6;
+  margin-bottom: 40px;
+}
+
+.info-features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  margin-bottom: 40px;
+}
+
+.info-feature-item {
+  display: flex;
+  gap: 16px;
+}
+
+.feature-icon-wrapper {
+  background-color: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  color: #818cf8;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.info-feature-item h4 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f8fafc;
   margin-bottom: 4px;
 }
 
-.auth-logo p {
+.info-feature-item p {
+  font-size: 13px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.info-footer-text {
+  font-size: 12px;
+  color: #64748b;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 20px;
+}
+
+/* Cột Phải - Form đăng nhập */
+.auth-form-panel {
+  flex: 0.9;
+  padding: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
+}
+
+.auth-form-container {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-header {
+  margin-bottom: 28px;
+}
+
+.form-header h2 {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  letter-spacing: -0.5px;
+}
+
+.form-header p {
   font-size: 13px;
   color: var(--text-secondary);
+  line-height: 1.5;
 }
 
 .auth-tabs {
@@ -1229,7 +1349,6 @@ input:checked + .slider:before {
 
 .social-login-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
@@ -1263,5 +1382,20 @@ input:checked + .slider:before {
   font-size: 13px;
   font-weight: 500;
 }
+
+/* Ẩn cột trái trên thiết bị di động */
+@media (max-width: 900px) {
+  .auth-split-box {
+    max-width: 460px;
+    min-height: auto;
+  }
+  .auth-info-panel {
+    display: none;
+  }
+  .auth-form-panel {
+    padding: 40px 30px;
+  }
+}
+
 
 
