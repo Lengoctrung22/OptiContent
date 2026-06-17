@@ -988,3 +988,48 @@ input:checked + .slider:before {
 .fade-in {
   animation: fadeIn 0.25s ease-out forwards;
 }
+
+/* Avatar Uploader */
+.avatar-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.avatar-preview {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border-color);
+  background-color: #f1f5f9;
+}
+
+.avatar-upload-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.avatar-upload-label {
+  background-color: var(--primary-light);
+  color: var(--primary);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-block;
+  border: 1px dashed var(--primary);
+}
+
+.avatar-upload-label:hover {
+  background-color: var(--primary);
+  color: #ffffff;
+  border-style: solid;
+}
+

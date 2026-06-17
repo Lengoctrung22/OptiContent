@@ -43,6 +43,12 @@ function App() {
   const [workspaceDefaults, setWorkspaceDefaults] = useState(null);
   const [activeArticle, setActiveArticle] = useState(null);
   
+  // Quản lý trạng thái hồ sơ người dùng (avatar và tên hiển thị)
+  const [userProfile, setUserProfile] = useState(() => {
+    const saved = localStorage.getItem('opticontent_profile');
+    return saved ? JSON.parse(saved) : { name: 'Nguyễn Văn Trọng', email: 'trongnv@gmail.com', avatar: '' };
+  });
+
   // Quản lý danh sách bài viết từ localStorage
   const [historyList, setHistoryList] = useState([]);
 
@@ -56,6 +62,11 @@ function App() {
       setHistoryList(mockInitialArticles);
     }
   }, []);
+
+  // Lưu cấu hình hồ sơ khi thay đổi
+  useEffect(() => {
+    localStorage.setItem('opticontent_profile', JSON.stringify(userProfile));
+  }, [userProfile]);
 
   // Hàm Lưu bài viết
   const handleSaveArticle = (newArticle) => {
@@ -96,7 +107,7 @@ function App() {
       case 'dashboard': return 'Bảng điều khiển';
       case 'workspace': return 'Phòng làm việc (Editor)';
       case 'history': return 'Thư viện bài viết';
-      case 'settings': return 'Cài đặt hệ thống';
+      case 'settings': return 'Cài đặt';
       default: return 'OptiContent';
     }
   };
@@ -157,7 +168,7 @@ function App() {
               }}
             >
               <SettingsIcon size={18} />
-              Cài đặt cấu hình
+              Cài đặt
             </button>
           </nav>
         </div>
@@ -174,9 +185,19 @@ function App() {
         <header className="main-header">
           <h2>{getScreenTitle()}</h2>
           <div className="header-actions">
-            <div className="user-badge">
-              <User size={14} />
-              <span>Nguyễn Văn Trọng</span>
+            <div className="user-badge" style={{ gap: '10px', padding: '4px 12px 4px 6px' }}>
+              {userProfile.avatar ? (
+                <img 
+                  src={userProfile.avatar} 
+                  alt="User avatar" 
+                  style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }}
+                />
+              ) : (
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContext: 'center', paddingLeft: '7px' }}>
+                  <User size={14} style={{ color: 'var(--primary)' }} />
+                </div>
+              )}
+              <span style={{ fontWeight: '600' }}>{userProfile.name}</span>
             </div>
           </div>
         </header>
@@ -210,7 +231,10 @@ function App() {
           )}
 
           {activeScreen === 'settings' && (
-            <Settings />
+            <Settings 
+              userProfile={userProfile}
+              setUserProfile={setUserProfile}
+            />
           )}
         </div>
       </main>
