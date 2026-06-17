@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login } from '../controllers/auth.controller.js';
+import { register, login, googleLogin } from '../controllers/auth.controller.js';
 
 const router = express.Router();
 
@@ -8,5 +8,8 @@ router.post('/register', register);
 
 // Định tuyến API Đăng nhập hệ thống
 router.post('/login', login);
+
+// Định tuyến API Đăng nhập/Đăng ký nhanh bằng Google
+router.post('/google', googleLogin);
 
 export default router;
