@@ -1,6 +1,6 @@
 import express from 'express';
 import aiRoutes from './ai.routes.js';
-// import authRoutes from './auth.routes.js'; // Sẽ thêm khi viết thêm auth controller
+import authRoutes from './auth.routes.js';
 
 const router = express.Router();
 
@@ -17,6 +17,6 @@ router.get('/health', (req, res) => {
 
 // Gắn các nhánh định tuyến phụ
 router.use('/ai', aiRoutes);
-// router.use('/auth', authRoutes);
+router.use('/auth', authRoutes);
 
 export default router;
