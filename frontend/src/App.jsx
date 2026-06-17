@@ -1,11 +1,218 @@
-import React from 'react';
-import ChatAI from './pages/ChatAI';
+import React, { useState, useEffect } from 'react';
+import { 
+  LayoutDashboard, 
+  PenTool, 
+  Database, 
+  Settings as SettingsIcon, 
+  User, 
+  Zap,
+  BookOpen
+} from 'lucide-react';
+
+import Dashboard from './pages/Dashboard.jsx';
+import Workspace from './pages/Workspace.jsx';
+import History from './pages/History.jsx';
+import Settings from './pages/Settings.jsx';
+
+// Dữ liệu giả lập ban đầu để hiển thị đẹp mắt
+const mockInitialArticles = [
+  {
+    id: 'mock-1',
+    title: 'Top 5 Lợi Ích Của AI Trong Sáng Tạo Nội Dung Số',
+    content: `# Top 5 Lợi Ích Của AI Trong Sáng Tạo Nội Dung Số\n\nTrí tuệ nhân tạo (AI) đang định hình lại cách chúng ta sáng tạo nội dung hàng ngày. Dưới đây là 5 lợi ích vượt trội:\n\n1. **Tốc độ vượt trội**: Tiết kiệm 80% thời gian nghiên cứu và lập dàn ý.\n2. **Tối ưu hóa SEO**: Tự động phân bổ từ khóa và phân tích thẻ meta để nâng hạng tìm kiếm Google.\n3. **Cải thiện văn phong**: Giọng điệu đa dạng, phù hợp cho cả blog chuyên sâu hay bài đăng mạng xã hội năng động.\n4. **Giải quyết bí ý tưởng**: Tạo hàng chục dàn ý bài viết chỉ với vài từ khóa chủ đề.\n5. **Tiết kiệm chi phí**: Tối ưu hóa hiệu suất làm việc của nhóm biên tập nội dung.`,
+    platform: 'Blog',
+    tone: 'Professional',
+    keywords: 'AI sáng tạo nội dung, tối ưu SEO, viết bài tự động',
+    hasImage: true,
+    createdAt: new Date(Date.now() - 3600000 * 24).toISOString() // 1 ngày trước
+  },
+  {
+    id: 'mock-2',
+    title: 'Bí quyết thu hút triệu lượt xem trên Facebook năm 2026',
+    content: `Cách viết bài viết mạng xã hội (Facebook/Instagram) lôi cuốn và giữ chân người đọc trong 3 giây đầu tiên:\n\n🔥 **1. TIÊU ĐỀ NỔI BẬT**: Sử dụng các từ ngữ kích thích tò mò hoặc số liệu gây sốc.\n\n📌 **2. ĐỘ DÀI VỪA PHẢI**: Viết ngắn gọn, tập trung và chia nhỏ thành các đoạn bằng emoji để dễ quét mắt.\n\n👉 **3. CALL TO ACTION (CTA) MẠNH MẼ**: Kêu gọi thả tim, bình luận góc nhìn của bản thân hoặc chia sẻ bài viết để lưu lại.\n\n#marketing #facebooktips #contentcreators`,
+    platform: 'Facebook',
+    tone: 'Casual',
+    keywords: 'bài viết facebook, triệu view, viết content',
+    hasImage: false,
+    createdAt: new Date(Date.now() - 3600000 * 3).toISOString() // 3 giờ trước
+  }
+];
 
 function App() {
+  const [activeScreen, setActiveScreen] = useState('dashboard');
+  const [workspaceDefaults, setWorkspaceDefaults] = useState(null);
+  const [activeArticle, setActiveArticle] = useState(null);
+  
+  // Quản lý danh sách bài viết từ localStorage
+  const [historyList, setHistoryList] = useState([]);
+
+  // Tải dữ liệu ban đầu
+  useEffect(() => {
+    const saved = localStorage.getItem('opticontent_articles');
+    if (saved) {
+      setHistoryList(JSON.parse(saved));
+    } else {
+      localStorage.setItem('opticontent_articles', JSON.stringify(mockInitialArticles));
+      setHistoryList(mockInitialArticles);
+    }
+  }, []);
+
+  // Hàm Lưu bài viết
+  const handleSaveArticle = (newArticle) => {
+    let updatedList = [];
+    const exists = historyList.some(item => item.id === newArticle.id);
+    
+    if (exists) {
+      updatedList = historyList.map(item => item.id === newArticle.id ? newArticle : item);
+    } else {
+      updatedList = [newArticle, ...historyList];
+    }
+    
+    setHistoryList(updatedList);
+    localStorage.setItem('opticontent_articles', JSON.stringify(updatedList));
+  };
+
+  // Hàm Xóa bài viết
+  const handleDeleteArticle = (id) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa bài viết này khỏi thư viện?')) {
+      const updatedList = historyList.filter(item => item.id !== id);
+      setHistoryList(updatedList);
+      localStorage.setItem('opticontent_articles', JSON.stringify(updatedList));
+    }
+  };
+
+  // Hàm chọn bài viết để sửa ngược lại trong Workspace
+  const handleEditArticle = (article) => {
+    setActiveArticle(article);
+    setWorkspaceDefaults(null);
+  };
+
+  const clearActiveArticle = () => {
+    setActiveArticle(null);
+  };
+
+  const getScreenTitle = () => {
+    switch (activeScreen) {
+      case 'dashboard': return 'Bảng điều khiển';
+      case 'workspace': return 'Phòng làm việc (Editor)';
+      case 'history': return 'Thư viện bài viết';
+      case 'settings': return 'Cài đặt hệ thống';
+      default: return 'OptiContent';
+    }
+  };
+
   return (
-    <div className="app-layout">
-      <main className="main-content">
-        <ChatAI />
+    <div className="app-container">
+      {/* Sidebar Navigation */}
+      <aside className="sidebar">
+        <div>
+          <div className="sidebar-logo">
+            <Zap size={22} className="logo-icon" />
+            <h1>OptiContent</h1>
+          </div>
+          
+          <nav className="sidebar-menu">
+            <button 
+              className={`menu-item ${activeScreen === 'dashboard' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveScreen('dashboard');
+                setWorkspaceDefaults(null);
+                setActiveArticle(null);
+              }}
+            >
+              <LayoutDashboard size={18} />
+              Bảng điều khiển
+            </button>
+
+            <button 
+              className={`menu-item ${activeScreen === 'workspace' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveScreen('workspace');
+                setWorkspaceDefaults(null);
+                setActiveArticle(null);
+              }}
+            >
+              <PenTool size={18} />
+              Phòng soạn thảo
+            </button>
+
+            <button 
+              className={`menu-item ${activeScreen === 'history' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveScreen('history');
+                setWorkspaceDefaults(null);
+                setActiveArticle(null);
+              }}
+            >
+              <BookOpen size={18} />
+              Thư viện bài viết
+            </button>
+
+            <button 
+              className={`menu-item ${activeScreen === 'settings' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveScreen('settings');
+                setWorkspaceDefaults(null);
+                setActiveArticle(null);
+              }}
+            >
+              <SettingsIcon size={18} />
+              Cài đặt cấu hình
+            </button>
+          </nav>
+        </div>
+
+        <div className="sidebar-footer">
+          <p>OptiContent v1.0.0</p>
+          <p>© 2026 AI Engine Powered</p>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="content-area">
+        {/* Header */}
+        <header className="main-header">
+          <h2>{getScreenTitle()}</h2>
+          <div className="header-actions">
+            <div className="user-badge">
+              <User size={14} />
+              <span>Nguyễn Văn Trọng</span>
+            </div>
+          </div>
+        </header>
+
+        {/* Dynamic Screen Page */}
+        <div className="screen-wrapper">
+          {activeScreen === 'dashboard' && (
+            <Dashboard 
+              setActiveScreen={setActiveScreen}
+              setWorkspaceDefaults={setWorkspaceDefaults}
+              historyList={historyList}
+            />
+          )}
+
+          {activeScreen === 'workspace' && (
+            <Workspace 
+              onSaveArticle={handleSaveArticle}
+              defaultValues={workspaceDefaults}
+              activeArticle={activeArticle}
+              clearActiveArticle={clearActiveArticle}
+            />
+          )}
+
+          {activeScreen === 'history' && (
+            <History 
+              historyList={historyList}
+              onDeleteArticle={handleDeleteArticle}
+              onEditArticle={handleEditArticle}
+              setActiveScreen={setActiveScreen}
+            />
+          )}
+
+          {activeScreen === 'settings' && (
+            <Settings />
+          )}
+        </div>
       </main>
     </div>
   );
