@@ -81,12 +81,6 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
     }
   }, [activeArticle]);
 
-  // Clean active article on unmount
-  useEffect(() => {
-    return () => {
-      if (clearActiveArticle) clearActiveArticle();
-    };
-  }, []);
 
   const handleGenerate = async (e) => {
     e.preventDefault();
@@ -423,6 +417,11 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
           <div className="editor-title">
             <FileText size={18} style={{ color: 'var(--text-secondary)' }} />
             <span style={{ fontSize: '14px', fontWeight: '600' }}>Khung soạn thảo</span>
+            {currentArticleId && (
+              <span style={{ fontSize: '11px', color: '#4f46e5', backgroundColor: '#e0e7ff', padding: '3px 8px', borderRadius: '4px', marginLeft: '10px', fontWeight: '600', display: 'inline-flex', alignItems: 'center' }}>
+                Đang chỉnh sửa
+              </span>
+            )}
             {saveStatus === 'saved' && (
               <span className="editor-status fade-in">
                 <span className="editor-status-dot"></span> Đã lưu
@@ -436,6 +435,26 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
           </div>
 
           <div className="editor-actions">
+            {currentArticleId && (
+              <button 
+                className="btn-secondary"
+                style={{ borderColor: '#fecaca', color: '#ef4444' }}
+                onClick={() => {
+                  if (window.confirm('Bạn có chắc chắn muốn đóng chế độ chỉnh sửa và tạo bài viết mới?')) {
+                    clearActiveArticle();
+                    setCurrentArticleId('');
+                    setEditorContent('');
+                    setTopic('');
+                    setKeywords('');
+                    setIsShared(false);
+                  }
+                }}
+                title="Đóng chế độ chỉnh sửa và tạo bài viết mới"
+              >
+                Tạo bài viết mới
+              </button>
+            )}
+
             <button 
               className="btn-secondary" 
               onClick={handleCopy}
@@ -450,10 +469,11 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
               className="btn-secondary" 
               onClick={handleSave}
               disabled={isSaving || !editorContent}
-              title="Lưu vào Thư viện"
+              title={currentArticleId ? "Cập nhật bài viết" : "Lưu vào Thư viện"}
+              style={currentArticleId ? { backgroundColor: 'var(--primary)', color: '#ffffff', borderColor: 'var(--primary)' } : {}}
             >
               <Save size={14} />
-              Lưu thư viện
+              {currentArticleId ? 'Cập nhật bài viết' : 'Lưu thư viện'}
             </button>
 
             {/* Dropdown Tải xuống */}
