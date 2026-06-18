@@ -78,6 +78,7 @@ export const register = async (req, res, next) => {
           role: user.role,
           status: user.status,
           currentPlan: user.currentPlan,
+          avatar: user.avatar || '',
         },
       });
     } else {
@@ -137,6 +138,7 @@ export const login = async (req, res, next) => {
         role: user.role,
         status: user.status,
         currentPlan: user.currentPlan,
+        avatar: user.avatar || '',
       },
     });
   } catch (error) {
