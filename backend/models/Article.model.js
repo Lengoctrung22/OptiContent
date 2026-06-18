@@ -98,6 +98,12 @@ const articleSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+
+    // Trạng thái chia sẻ liên kết công khai (Public link sharing)
+    isShared: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

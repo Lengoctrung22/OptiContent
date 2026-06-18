@@ -17,6 +17,8 @@ import History from './pages/History.jsx';
 import Settings from './pages/Settings.jsx';
 import Auth from './pages/Auth.jsx';
 import Admin from './pages/Admin.jsx';
+import ShareView from './pages/ShareView.jsx';
+import api from './services/api.js';
 
 // Dữ liệu giả lập ban đầu để hiển thị đẹp mắt
 const mockInitialArticles = [
@@ -47,6 +49,15 @@ function App() {
   const [workspaceDefaults, setWorkspaceDefaults] = useState(null);
   const [activeArticle, setActiveArticle] = useState(null);
   
+  // Trạng thái chia sẻ công khai qua URL
+  const [shareId] = useState(() => {
+    const path = window.location.pathname;
+    if (path.startsWith('/share/')) {
+      return path.split('/share/')[1];
+    }
+    return '';
+  });
+
   // Trạng thái đăng nhập
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem('opticontent_auth') === 'true';
@@ -58,19 +69,29 @@ function App() {
     return saved ? JSON.parse(saved) : { name: 'Nguyễn Văn Trọng', email: 'trongnv@gmail.com', avatar: '' };
   });
 
-  // Quản lý danh sách bài viết từ localStorage
+  // Quản lý danh sách bài viết từ Backend
   const [historyList, setHistoryList] = useState([]);
 
-  // Tải dữ liệu ban đầu
+  // Tải dữ liệu từ Backend API
   useEffect(() => {
-    const saved = localStorage.getItem('opticontent_articles');
-    if (saved) {
-      setHistoryList(JSON.parse(saved));
-    } else {
-      localStorage.setItem('opticontent_articles', JSON.stringify(mockInitialArticles));
-      setHistoryList(mockInitialArticles);
-    }
-  }, []);
+    const fetchArticles = async () => {
+      if (!isAuthenticated || shareId) return;
+      try {
+        const response = await api.get('/articles');
+        if (response.data && response.data.success) {
+          const articles = response.data.data.map(art => ({
+            ...art,
+            id: art._id
+          }));
+          setHistoryList(articles);
+        }
+      } catch (err) {
+        console.error('Lỗi khi tải danh sách bài viết từ server:', err);
+      }
+    };
+
+    fetchArticles();
+  }, [isAuthenticated, shareId]);
 
   // Lưu cấu hình hồ sơ khi thay đổi
   useEffect(() => {
@@ -87,35 +108,90 @@ function App() {
 
   // Xử lý đăng xuất
   const handleLogout = () => {
-    if (window.confirm('Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?')) {
-      setIsAuthenticated(false);
-      localStorage.removeItem('opticontent_auth');
-      localStorage.removeItem('opticontent_profile');
-      localStorage.removeItem('token');
-    }
+    setIsAuthenticated(false);
+    localStorage.removeItem('opticontent_auth');
+    localStorage.removeItem('opticontent_profile');
+    localStorage.removeItem('token');
   };
 
-  // Hàm Lưu bài viết
-  const handleSaveArticle = (newArticle) => {
-    let updatedList = [];
-    const exists = historyList.some(item => item.id === newArticle.id);
-    
-    if (exists) {
-      updatedList = historyList.map(item => item.id === newArticle.id ? newArticle : item);
-    } else {
-      updatedList = [newArticle, ...historyList];
+  // Hàm Lưu bài viết lên Backend
+  const handleSaveArticle = async (newArticle) => {
+    try {
+      let response;
+      const isMongoId = newArticle.id && newArticle.id.length === 24 && /^[0-9a-fA-F]+$/.test(newArticle.id);
+
+      const payload = {
+        title: newArticle.title,
+        content: newArticle.content,
+        platform: newArticle.platform,
+        tone: newArticle.tone,
+        keywords: newArticle.keywords,
+        hasImage: newArticle.hasImage,
+        imageUrl: newArticle.imageUrl || '',
+        seoMeta: newArticle.seoMeta || { seoTitle: '', metaDescription: '' },
+        isShared: newArticle.isShared || false
+      };
+
+      if (isMongoId) {
+        // Cập nhật bài viết hiện tại
+        response = await api.put(`/articles/${newArticle.id}`, payload);
+      } else {
+        // Tạo bài viết hoàn toàn mới
+        response = await api.post('/articles', payload);
+      }
+
+      if (response.data && response.data.success) {
+        const savedArt = {
+          ...response.data.data,
+          id: response.data.data._id
+        };
+
+        setHistoryList(prev => {
+          const exists = prev.some(item => item.id === savedArt.id);
+          if (exists) {
+            return prev.map(item => item.id === savedArt.id ? savedArt : item);
+          } else {
+            return [savedArt, ...prev];
+          }
+        });
+
+        return savedArt;
+      }
+    } catch (err) {
+      console.error('Lỗi khi lưu bài viết lên server:', err);
+      alert('Không thể lưu bài viết lên hệ thống. Vui lòng kiểm tra kết nối mạng!');
+      throw err;
     }
-    
-    setHistoryList(updatedList);
-    localStorage.setItem('opticontent_articles', JSON.stringify(updatedList));
   };
 
   // Hàm Xóa bài viết
-  const handleDeleteArticle = (id) => {
+  const handleDeleteArticle = async (id) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa bài viết này khỏi thư viện?')) {
-      const updatedList = historyList.filter(item => item.id !== id);
-      setHistoryList(updatedList);
-      localStorage.setItem('opticontent_articles', JSON.stringify(updatedList));
+      try {
+        const response = await api.delete(`/articles/${id}`);
+        if (response.data && response.data.success) {
+          setHistoryList(prev => prev.filter(item => item.id !== id));
+        }
+      } catch (err) {
+        console.error('Lỗi khi xóa bài viết trên server:', err);
+        alert('Không thể xóa bài viết. Vui lòng thử lại!');
+      }
+    }
+  };
+
+  // Hàm chuyển đổi trạng thái chia sẻ bài viết từ Thư viện
+  const handleToggleShareInList = async (id) => {
+    try {
+      const response = await api.patch(`/articles/${id}/share`);
+      if (response.data && response.data.success) {
+        setHistoryList(prev => prev.map(item => item.id === id ? {
+          ...item,
+          isShared: response.data.data.isShared
+        } : item));
+      }
+    } catch (err) {
+      console.error('Lỗi khi thay đổi trạng thái chia sẻ:', err);
+      alert('Không thể thay đổi trạng thái chia sẻ bài viết.');
     }
   };
 
@@ -139,6 +215,11 @@ function App() {
       default: return 'OptiContent';
     }
   };
+
+  // Nếu là liên kết chia sẻ công khai, hiển thị trực tiếp chế độ đọc (Reader Mode)
+  if (shareId) {
+    return <ShareView articleId={shareId} />;
+  }
 
   // Nếu chưa đăng nhập, chỉ render màn hình Auth
   if (!isAuthenticated) {
@@ -293,6 +374,7 @@ function App() {
               historyList={historyList}
               onDeleteArticle={handleDeleteArticle}
               onEditArticle={handleEditArticle}
+              onToggleShare={handleToggleShareInList}
               setActiveScreen={setActiveScreen}
             />
           )}
