@@ -28,11 +28,11 @@ import {
   Link
 } from 'lucide-react';
 
-const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, clearActiveArticle }) => {
-  const [topic, setTopic] = useState('');
-  const [keywords, setKeywords] = useState('');
-  const [platform, setPlatform] = useState('Blog');
-  const [tone, setTone] = useState('Professional');
+const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, clearActiveArticle, workspaceDraft, setWorkspaceDraft }) => {
+  const [topic, setTopic] = useState(workspaceDraft?.topic || '');
+  const [keywords, setKeywords] = useState(workspaceDraft?.keywords || '');
+  const [platform, setPlatform] = useState(workspaceDraft?.platform || 'Blog');
+  const [tone, setTone] = useState(workspaceDraft?.tone || 'Professional');
   
   // Toggles
   const [needOutline, setNeedOutline] = useState(false);
@@ -40,15 +40,15 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
   const [needImage, setNeedImage] = useState(false);
   
   // Editor state
-  const [editorContent, setEditorContent] = useState('');
-  const [currentArticleId, setCurrentArticleId] = useState('');
+  const [editorContent, setEditorContent] = useState(workspaceDraft?.editorContent || '');
+  const [currentArticleId, setCurrentArticleId] = useState(workspaceDraft?.currentArticleId || '');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState(''); // 'saved', 'saving', ''
   const [copied, setCopied] = useState(false);
   
   // Trạng thái chia sẻ và tải file
-  const [isShared, setIsShared] = useState(false);
+  const [isShared, setIsShared] = useState(workspaceDraft?.isShared || false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -59,6 +59,24 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
   
   const quillRef = useRef(null);
   const selectionRangeRef = useRef(null);
+
+
+
+
+  // Đồng bộ bản nháp liên tục để luôn có dữ liệu mới nhất khi unmount
+  const draftRef = useRef({ topic, keywords, platform, tone, editorContent, currentArticleId, isShared });
+  useEffect(() => {
+    draftRef.current = { topic, keywords, platform, tone, editorContent, currentArticleId, isShared };
+  }, [topic, keywords, platform, tone, editorContent, currentArticleId, isShared]);
+
+  // Lưu bản nháp thực tế khi unmount (sử dụng ref để luôn có giá trị mới nhất)
+  useEffect(() => {
+    return () => {
+      if (setWorkspaceDraft) {
+        setWorkspaceDraft(draftRef.current);
+      }
+    };
+  }, [setWorkspaceDraft]);
 
   // Apply default values from dashboard quick link
   useEffect(() => {
@@ -80,13 +98,8 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
       const contentHtml = rawContent.trim().startsWith('<') ? rawContent : marked.parse(rawContent);
       setEditorContent(contentHtml);
       setCurrentArticleId(activeArticle.id || '');
-    } else {
-      setCurrentArticleId('');
-      setEditorContent('');
-      setTopic('');
-      setKeywords('');
-      setIsShared(false);
     }
+    // Không xóa nội dung khi activeArticle là null — giữ lại bản nháp đang soạn
   }, [activeArticle]);
 
 

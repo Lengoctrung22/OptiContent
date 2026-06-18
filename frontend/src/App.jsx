@@ -48,6 +48,17 @@ function App() {
   const [activeScreen, setActiveScreen] = useState('dashboard');
   const [workspaceDefaults, setWorkspaceDefaults] = useState(null);
   const [activeArticle, setActiveArticle] = useState(null);
+
+  // Bản nháp của Workspace: giữ lại nội dung soạn thảo khi chuyển trang
+  const [workspaceDraft, setWorkspaceDraft] = useState({
+    topic: '',
+    keywords: '',
+    platform: 'Blog',
+    tone: 'Professional',
+    editorContent: '',
+    currentArticleId: '',
+    isShared: false,
+  });
   
   // Trạng thái chia sẻ công khai qua URL
   const [shareId] = useState(() => {
@@ -112,6 +123,7 @@ function App() {
     localStorage.removeItem('opticontent_auth');
     localStorage.removeItem('opticontent_profile');
     localStorage.removeItem('token');
+    setWorkspaceDraft({ topic: '', keywords: '', platform: 'Blog', tone: 'Professional', editorContent: '', currentArticleId: '', isShared: false });
   };
 
   // Hàm Lưu bài viết lên Backend
@@ -254,7 +266,7 @@ function App() {
               onClick={() => {
                 setActiveScreen('workspace');
                 setWorkspaceDefaults(null);
-                setActiveArticle(null);
+                // Không xóa activeArticle ở đây để giữ lại bản nháp đang soạn
               }}
             >
               <PenTool size={18} />
@@ -366,6 +378,8 @@ function App() {
               defaultValues={workspaceDefaults}
               activeArticle={activeArticle}
               clearActiveArticle={clearActiveArticle}
+              workspaceDraft={workspaceDraft}
+              setWorkspaceDraft={setWorkspaceDraft}
             />
           )}
 
