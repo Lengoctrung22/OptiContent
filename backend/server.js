@@ -16,7 +16,8 @@ const app = express();
 
 // Thiết lập các middleware chung
 app.use(cors());
-app.use(express.json()); // Phân tích dữ liệu JSON gửi lên từ request body
+app.use(express.json({ limit: '10mb' })); // Hỗ trợ tải ảnh đại diện dạng base64 dung lượng lớn
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Log request khi đang chạy ở chế độ phát triển
 if (process.env.NODE_ENV !== 'production') {
