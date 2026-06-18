@@ -2,6 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { marked } from 'marked';
+
+// Cấu hình marked: bật breaks để mỗi dấu xuống dòng (\n) tạo thẻ <br>,
+// và gfm để hỗ trợ cú pháp GitHub-Flavored Markdown (danh sách, bảng, v.v.)
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+});
+
 import { generateContent } from '../services/ai.service.js';
 import api from '../services/api.js';
 import { downloadAsWord, downloadAsMarkdown, downloadAsHtml } from '../utils/exporters.js';
