@@ -2,6 +2,7 @@ import express from 'express';
 import aiRoutes from './ai.routes.js';
 import authRoutes from './auth.routes.js';
 import articleRoutes from './article.routes.js';
+import userRoutes from './user.routes.js';
 
 const router = express.Router();
 
@@ -20,5 +21,6 @@ router.get('/health', (req, res) => {
 router.use('/ai', aiRoutes);
 router.use('/auth', authRoutes);
 router.use('/articles', articleRoutes);
+router.use('/users', userRoutes);
 
 export default router;

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { User, Sparkles, Link, Save, Check, Key, Image as ImageIcon } from 'lucide-react';
+import api from '../services/api';
 
 const Settings = ({ userProfile, setUserProfile }) => {
   const [activeTab, setActiveTab] = useState('account');
@@ -27,29 +28,48 @@ const Settings = ({ userProfile, setUserProfile }) => {
   // Default avatar image if not set
   const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E";
 
-  const handleSaveSettings = (e) => {
+  const handleSaveSettings = async (e) => {
     e.preventDefault();
     setIsSaving(true);
+    setSavedSuccess(false);
     
-    // Giả lập lưu vào DB
-    setTimeout(() => {
-      setIsSaving(false);
-      setSavedSuccess(true);
-      // Cập nhật lên cấp cao hơn
-      if (setUserProfile) {
-        setUserProfile(prev => ({
-          ...prev,
-          name: displayName,
-          email: email
-        }));
+    try {
+      const response = await api.put('/users/profile', {
+        name: displayName,
+        email: email,
+        avatar: userProfile?.avatar || ''
+      });
+      
+      if (response.data && response.data.success) {
+        setIsSaving(false);
+        setSavedSuccess(true);
+        if (setUserProfile) {
+          const updatedUser = {
+            ...userProfile,
+            name: response.data.data.fullName,
+            email: response.data.data.email,
+            avatar: response.data.data.avatar
+          };
+          setUserProfile(updatedUser);
+          localStorage.setItem('opticontent_profile', JSON.stringify(updatedUser));
+        }
+        setTimeout(() => setSavedSuccess(false), 2500);
       }
-      setTimeout(() => setSavedSuccess(false), 2500);
-    }, 800);
+    } catch (err) {
+      console.error('Lỗi cập nhật cấu hình:', err);
+      alert(err.response?.data?.message || 'Có lỗi xảy ra khi cập nhật hồ sơ cá nhân.');
+      setIsSaving(false);
+    }
   };
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Kích thước ảnh đại diện không được vượt quá 2MB!');
+      return;
+    }
 
     // Convert to base64 to store in local state/localStorage
     const reader = new FileReader();
@@ -64,7 +84,7 @@ const Settings = ({ userProfile, setUserProfile }) => {
     reader.readAsDataURL(file);
   };
 
-  const handleChangePassword = (e) => {
+  const handleChangePassword = async (e) => {
     e.preventDefault();
     setPasswordError('');
     setPasswordSuccess(false);
@@ -74,20 +94,31 @@ const Settings = ({ userProfile, setUserProfile }) => {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setPasswordError('Mật khẩu mới phải chứa ít nhất 6 ký tự!');
+    if (newPassword.length < 8) {
+      setPasswordError('Mật khẩu mới phải chứa ít nhất 8 ký tự!');
       return;
     }
 
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      const response = await api.put('/users/password', {
+        currentPassword,
+        newPassword
+      });
+      
+      if (response.data && response.data.success) {
+        setIsSaving(false);
+        setPasswordSuccess(true);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setTimeout(() => setPasswordSuccess(false), 3000);
+      }
+    } catch (err) {
+      console.error('Lỗi khi đổi mật khẩu:', err);
+      setPasswordError(err.response?.data?.message || 'Mật khẩu hiện tại không chính xác.');
       setIsSaving(false);
-      setPasswordSuccess(true);
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setTimeout(() => setPasswordSuccess(false), 3000);
-    }, 1000);
+    }
   };
 
   return (
