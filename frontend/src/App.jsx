@@ -211,6 +211,16 @@ function App() {
   const handleEditArticle = (article) => {
     setActiveArticle(article);
     setWorkspaceDefaults(null);
+    // Xóa bản nháp cũ để Workspace hiển thị đúng bài viết đang chỉnh sửa
+    setWorkspaceDraft({
+      topic: article.title || '',
+      keywords: article.keywords || '',
+      platform: article.platform || 'Blog',
+      tone: article.tone || 'Professional',
+      editorContent: '',
+      currentArticleId: article.id || '',
+      isShared: article.isShared || false,
+    });
   };
 
   const clearActiveArticle = () => {
