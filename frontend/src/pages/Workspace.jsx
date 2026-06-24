@@ -31,7 +31,11 @@ import {
   Volume2,
   VolumeX,
   Pause,
-  Play
+  Play,
+  Send,
+  MessageSquare,
+  Trash2,
+  Plus
 } from 'lucide-react';
 
 const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, clearActiveArticle, workspaceDraft, setWorkspaceDraft }) => {
@@ -106,14 +110,18 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
   const quillRef = useRef(null);
   const selectionRangeRef = useRef(null);
 
-
-
+  // Sidebar Chat states
+  const [showChatSidebar, setShowChatSidebar] = useState(workspaceDraft?.showChatSidebar || false);
+  const [chatMessages, setChatMessages] = useState(workspaceDraft?.chatMessages || []);
+  const [chatInput, setChatInput] = useState('');
+  const [isChatGenerating, setIsChatGenerating] = useState(false);
+  const [useContext, setUseContext] = useState(true);
 
   // Đồng bộ bản nháp liên tục để luôn có dữ liệu mới nhất khi unmount
-  const draftRef = useRef({ topic, keywords, platform, tone, editorContent, currentArticleId, isShared });
+  const draftRef = useRef({ topic, keywords, platform, tone, editorContent, currentArticleId, isShared, showChatSidebar, chatMessages });
   useEffect(() => {
-    draftRef.current = { topic, keywords, platform, tone, editorContent, currentArticleId, isShared };
-  }, [topic, keywords, platform, tone, editorContent, currentArticleId, isShared]);
+    draftRef.current = { topic, keywords, platform, tone, editorContent, currentArticleId, isShared, showChatSidebar, chatMessages };
+  }, [topic, keywords, platform, tone, editorContent, currentArticleId, isShared, showChatSidebar, chatMessages]);
 
   // Lưu bản nháp thực tế khi unmount (sử dụng ref để luôn có giá trị mới nhất)
   useEffect(() => {
@@ -373,6 +381,60 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
     alert(`Đăng bài viết thành công trực tiếp lên trang ${target}!`);
   };
 
+  // Sidebar Chat Helpers
+  const handleSendChatMessage = async (e) => {
+    e.preventDefault();
+    if (!chatInput.trim() || isChatGenerating) return;
+
+    const userMessage = { role: 'user', content: chatInput };
+    setChatMessages(prev => [...prev, userMessage]);
+    const inputToSend = chatInput;
+    setChatInput('');
+    setIsChatGenerating(true);
+
+    try {
+      let finalPrompt = '';
+      if (useContext && editorContent) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = editorContent;
+        const plainText = tempDiv.textContent || tempDiv.innerText || '';
+        finalPrompt = `Ngữ cảnh bài viết hiện tại:\n"""\n${plainText.substring(0, 8000)}\n"""\n\nYêu cầu hỗ trợ soạn thảo: ${inputToSend}`;
+      } else {
+        finalPrompt = inputToSend;
+      }
+
+      const response = await generateContent(finalPrompt);
+      if (response.success && response.data) {
+        setChatMessages(prev => [...prev, { role: 'model', content: response.data }]);
+      } else {
+        setChatMessages(prev => [...prev, { role: 'model', content: 'Xin lỗi, không có phản hồi nào từ AI. Vui lòng thử lại!' }]);
+      }
+    } catch (err) {
+      console.error('Lỗi khi trò chuyện với AI:', err);
+      setChatMessages(prev => [...prev, { role: 'model', content: 'Có lỗi xảy ra khi kết nối tới máy chủ AI.' }]);
+    } finally {
+      setIsChatGenerating(false);
+    }
+  };
+
+  const handleInsertToEditor = (text) => {
+    const editor = quillRef.current?.getEditor();
+    if (editor) {
+      const range = editor.getSelection() || { index: editor.getLength() - 1, length: 0 };
+      editor.insertText(range.index, text);
+      editor.setSelection(range.index + text.length);
+      setEditorContent(editor.root.innerHTML);
+    } else {
+      setEditorContent(prev => prev + `<p>${text.replace(/\n/g, '<br>')}</p>`);
+    }
+  };
+
+  const handleClearChat = () => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa lịch sử trò chuyện trong phiên này?')) {
+      setChatMessages([]);
+    }
+  };
+
   const modules = {
     toolbar: [
       [{ 'header': [1, 2, 3, false] }],
@@ -384,7 +446,7 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
   };
 
   return (
-    <div className="workspace-grid fade-in">
+    <div className={`workspace-grid fade-in ${showChatSidebar ? 'has-chat-sidebar' : ''}`}>
       {/* Cột trái cấu hình */}
       <div className="workspace-sidebar">
         <h3 style={{ fontSize: '15px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -821,6 +883,17 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
               )}
             </div>
 
+            <button 
+              type="button"
+              className={`btn-secondary ${showChatSidebar ? 'active-chat-btn' : ''}`}
+              onClick={() => setShowChatSidebar(!showChatSidebar)}
+              title="Trợ lý AI Chat"
+              style={showChatSidebar ? { backgroundColor: 'var(--accent-light)', color: 'var(--accent)', borderColor: 'var(--accent)' } : {}}
+            >
+              <Sparkles size={14} />
+              <span>Trợ lý AI</span>
+            </button>
+
             <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--border-color)', margin: '0 4px' }} />
 
             <button 
@@ -871,6 +944,101 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
           )}
         </div>
       </div>
+
+      {/* Sidebar Chat Panel */}
+      {showChatSidebar && (
+        <div className="workspace-chat-sidebar">
+          <div className="sidebar-chat-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MessageSquare size={16} style={{ color: 'var(--accent)' }} />
+              <span style={{ fontWeight: '700', fontSize: '14px' }}>Trợ lý AI Chat</span>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                onClick={handleClearChat} 
+                className="clear-chat-btn" 
+                title="Xóa cuộc trò chuyện"
+                disabled={chatMessages.length === 0}
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          </div>
+
+          <div className="sidebar-chat-messages">
+            {chatMessages.length === 0 ? (
+              <div className="sidebar-chat-empty">
+                <Sparkles size={24} style={{ color: 'var(--accent)', marginBottom: '8px', animation: 'float-slow 3s infinite' }} />
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
+                  Trò chuyện với AI để nhận gợi ý, lên ý tưởng, hoặc chỉnh sửa nội dung bài viết.
+                </p>
+                <div className="sidebar-quick-prompts">
+                  <button onClick={() => { setChatInput('Tóm tắt bài viết này giúp tôi'); }}>
+                    📝 Tóm tắt bài viết
+                  </button>
+                  <button onClick={() => { setChatInput('Tìm và sửa lỗi chính tả trong bài viết'); }}>
+                    🔍 Tìm lỗi chính tả
+                  </button>
+                  <button onClick={() => { setChatInput('Viết một mở bài hấp dẫn dựa trên chủ đề trên'); }}>
+                    💡 Viết mở bài
+                  </button>
+                </div>
+              </div>
+            ) : (
+              chatMessages.map((msg, index) => (
+                <div key={index} className={`sidebar-msg-item ${msg.role}`}>
+                  <div className="sidebar-msg-bubble">
+                    <p style={{ margin: 0, whiteSpace: 'pre-line' }}>{msg.content}</p>
+                    {msg.role === 'model' && (
+                      <button 
+                        onClick={() => handleInsertToEditor(msg.content)}
+                        className="sidebar-insert-btn"
+                        title="Chèn nội dung này vào vị trí con trỏ trong trình soạn thảo"
+                      >
+                        <Plus size={12} />
+                        <span>Chèn vào bài viết</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+            {isChatGenerating && (
+              <div className="sidebar-msg-item model loading">
+                <div className="sidebar-msg-bubble loading">
+                  <Loader2 size={14} className="spinner" />
+                  <span>AI đang suy nghĩ...</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <form onSubmit={handleSendChatMessage} className="sidebar-chat-input-form">
+            <div className="context-checkbox-row">
+              <label>
+                <input 
+                  type="checkbox" 
+                  checked={useContext} 
+                  onChange={(e) => setUseContext(e.target.checked)} 
+                />
+                <span>Gửi kèm ngữ cảnh bài viết</span>
+              </label>
+            </div>
+            <div className="input-group-row">
+              <input 
+                type="text" 
+                placeholder="Hỏi AI trợ giúp..." 
+                value={chatInput} 
+                onChange={(e) => setChatInput(e.target.value)} 
+                disabled={isChatGenerating}
+              />
+              <button type="submit" disabled={!chatInput.trim() || isChatGenerating}>
+                <Send size={14} />
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 };

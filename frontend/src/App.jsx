@@ -20,7 +20,6 @@ import Auth from './pages/Auth.jsx';
 import Admin from './pages/Admin.jsx';
 import ShareView from './pages/ShareView.jsx';
 import Pricing from './pages/Pricing.jsx';
-import ChatAI from './pages/ChatAI.jsx';
 import api from './services/api.js';
 
 
@@ -253,7 +252,6 @@ function App() {
       case 'dashboard': return 'Bảng điều khiển';
       case 'workspace': return 'Phòng làm việc (Editor)';
       case 'history': return 'Thư viện bài viết';
-      case 'chatai': return 'Trợ lý AI Chat';
       case 'settings': return 'Cài đặt';
       case 'admin': return 'Quản trị hệ thống';
       case 'pricing': return 'Gói dịch vụ & Thanh toán';
@@ -321,18 +319,6 @@ function App() {
             >
               <BookOpen size={18} />
               Thư viện bài viết
-            </button>
-
-            <button 
-              className={`menu-item ${activeScreen === 'chatai' ? 'active' : ''}`}
-              onClick={() => {
-                setActiveScreen('chatai');
-                setWorkspaceDefaults(null);
-                setActiveArticle(null);
-              }}
-            >
-              <Bot size={18} />
-              Trợ lý AI Chat
             </button>
 
             {(userProfile.role === 'Admin' || userProfile.email === 'admin@opticontent.com' || userProfile.email === 'trongnv@gmail.com') && (
@@ -494,10 +480,6 @@ function App() {
 
           {activeScreen === 'admin' && (
             <Admin />
-          )}
-
-          {activeScreen === 'chatai' && (
-            <ChatAI />
           )}
         </div>
       </main>
