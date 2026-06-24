@@ -107,12 +107,23 @@ export const getUsers = async (req, res, next) => {
 
     const users = await User.find(query)
       .populate('currentPlan', 'name priceMonthly wordLimitDisplay')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const usersWithOnlineStatus = users.map(user => {
+      const isOnline = user.lastActive 
+        ? (Date.now() - new Date(user.lastActive).getTime() < 3 * 60 * 1000) // Online if active in last 3 minutes
+        : false;
+      return {
+        ...user,
+        isOnline
+      };
+    });
 
     res.status(200).json({
       success: true,
-      count: users.length,
-      data: users,
+      count: usersWithOnlineStatus.length,
+      data: usersWithOnlineStatus,
     });
   } catch (error) {
     next(error);

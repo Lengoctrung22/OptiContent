@@ -702,8 +702,8 @@ const Admin = () => {
                             </td>
                             <td>{(user.monthlyUsage?.wordsUsed || 0).toLocaleString()} từ</td>
                             <td>
-                              <span className={`status-badge-admin ${user.status.toLowerCase()}`}>
-                                {user.status === 'Active' ? 'Đang hoạt động' : 'Đang khóa'}
+                              <span className={`status-badge-admin ${user.isOnline ? 'online' : 'offline'}`}>
+                                {user.isOnline ? 'online' : 'offline'}
                               </span>
                             </td>
                             <td>{new Date(user.createdAt).toLocaleDateString('vi-VN')}</td>

@@ -35,6 +35,13 @@ export const verifyToken = async (req, res, next) => {
 
       // 5. Đính kèm thông tin user vào request object để các middleware/controller phía sau sử dụng
       req.user = currentUser;
+
+      // Cập nhật lastActive (chỉ lưu nếu lần cập nhật trước cách đây hơn 1 phút để tránh ghi DB liên tục)
+      const now = new Date();
+      if (!currentUser.lastActive || now.getTime() - new Date(currentUser.lastActive).getTime() > 60 * 1000) {
+        currentUser.lastActive = now;
+        await currentUser.save({ validateBeforeSave: false });
+      }
       
       return next();
     } catch (error) {

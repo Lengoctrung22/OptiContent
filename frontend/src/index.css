@@ -1831,6 +1831,8 @@ input:checked + .slider:before {
 }
 
 .status-badge-admin.active { background-color: #dcfce7; color: #15803d; }
+.status-badge-admin.online { background-color: #dcfce7; color: #15803d; }
+.status-badge-admin.offline { background-color: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; }
 .status-badge-admin.banned { background-color: #fee2e2; color: #b91c1c; }
 
 .admin-actions-cell {
