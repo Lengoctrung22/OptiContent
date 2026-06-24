@@ -57,7 +57,6 @@ const userSchema = new mongoose.Schema(
     // Thời điểm hoạt động cuối cùng
     lastActive: {
       type: Date,
-      default: Date.now,
     },
 
     // Liên kết tới gói cước đang sử dụng

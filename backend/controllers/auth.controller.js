@@ -123,6 +123,10 @@ export const login = async (req, res, next) => {
       return next(new Error('Email hoặc mật khẩu không chính xác!'));
     }
 
+    // Cập nhật hoạt động cuối cùng
+    user.lastActive = new Date();
+    await user.save({ validateBeforeSave: false });
+
     // 5. Trả về token và hồ sơ người dùng
     res.status(200).json({
       success: true,
@@ -186,9 +190,9 @@ export const googleLogin = async (req, res, next) => {
         needsSave = true;
       }
 
-      if (needsSave) {
-        await user.save();
-      }
+      // Cập nhật thông tin và trạng thái online
+      user.lastActive = new Date();
+      await user.save({ validateBeforeSave: false });
     } else {
       // 3. Nếu chưa tồn tại, tự động đăng ký tài khoản mới bằng thông tin Google
       const freePlan = await Plan.findOne({ slug: 'free' });
@@ -205,6 +209,7 @@ export const googleLogin = async (req, res, next) => {
         authProvider: 'google',
         avatar: avatar || '',
         currentPlan: currentPlanId,
+        lastActive: new Date(),
       });
     }
 
