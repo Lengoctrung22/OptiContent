@@ -35,8 +35,8 @@ const Auth = ({ onLogin, resetToken }) => {
         const response = await api.post('/auth/login', { email, password });
         
         if (response.data && response.data.success) {
-          // Lưu JWT token vào localStorage
-          localStorage.setItem('token', response.data.token);
+          // Lưu JWT token vào sessionStorage
+          sessionStorage.setItem('token', response.data.token);
           
           // Chuyển đổi trạng thái đăng nhập cho App.jsx
           onLogin({
@@ -124,7 +124,7 @@ const Auth = ({ onLogin, resetToken }) => {
       const response = await api.post('/auth/google', mockGooglePayload);
       
       if (response.data && response.data.success) {
-        localStorage.setItem('token', response.data.token);
+        sessionStorage.setItem('token', response.data.token);
         onLogin({
           name: response.data.user.fullName,
           email: response.data.user.email,

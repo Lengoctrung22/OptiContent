@@ -68,7 +68,7 @@ const Settings = ({ userProfile, setUserProfile }) => {
             brandVoice: response.data.data.brandVoice
           };
           setUserProfile(updatedUser);
-          localStorage.setItem('opticontent_profile', JSON.stringify(updatedUser));
+          sessionStorage.setItem('opticontent_profile', JSON.stringify(updatedUser));
         }
         setTimeout(() => setSavedSuccess(false), 2500);
       }
@@ -124,7 +124,7 @@ const Settings = ({ userProfile, setUserProfile }) => {
               brandVoice: response.data.data.brandVoice
             };
             setUserProfile(updatedUser);
-            localStorage.setItem('opticontent_profile', JSON.stringify(updatedUser));
+            sessionStorage.setItem('opticontent_profile', JSON.stringify(updatedUser));
           }
           setTimeout(() => setSavedSuccess(false), 2500);
         }
@@ -163,7 +163,7 @@ const Settings = ({ userProfile, setUserProfile }) => {
             brandVoice: response.data.data.brandVoice
           };
           setUserProfile(updatedUser);
-          localStorage.setItem('opticontent_profile', JSON.stringify(updatedUser));
+          sessionStorage.setItem('opticontent_profile', JSON.stringify(updatedUser));
         }
       }
     } catch (err) {

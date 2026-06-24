@@ -82,12 +82,12 @@ function App() {
 
   // Trạng thái đăng nhập
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('opticontent_auth') === 'true';
+    return sessionStorage.getItem('opticontent_auth') === 'true';
   });
 
   // Quản lý trạng thái hồ sơ người dùng (avatar và tên hiển thị)
   const [userProfile, setUserProfile] = useState(() => {
-    const saved = localStorage.getItem('opticontent_profile');
+    const saved = sessionStorage.getItem('opticontent_profile');
     return saved ? JSON.parse(saved) : { name: 'Nguyễn Văn Trọng', email: 'trongnv@gmail.com', avatar: '' };
   });
 
@@ -114,7 +114,7 @@ function App() {
           monthlyUsage: profileData.monthlyUsage || { wordsUsed: 0, imagesUsed: 0 }
         };
         setUserProfile(updated);
-        localStorage.setItem('opticontent_profile', JSON.stringify(updated));
+        sessionStorage.setItem('opticontent_profile', JSON.stringify(updated));
       }
     } catch (err) {
       console.error('Lỗi khi tải hồ sơ người dùng:', err);
@@ -145,23 +145,23 @@ function App() {
 
   // Lưu cấu hình hồ sơ khi thay đổi
   useEffect(() => {
-    localStorage.setItem('opticontent_profile', JSON.stringify(userProfile));
+    sessionStorage.setItem('opticontent_profile', JSON.stringify(userProfile));
   }, [userProfile]);
 
   // Xử lý đăng nhập thành công
   const handleLogin = (user) => {
     setUserProfile(user);
     setIsAuthenticated(true);
-    localStorage.setItem('opticontent_auth', 'true');
-    localStorage.setItem('opticontent_profile', JSON.stringify(user));
+    sessionStorage.setItem('opticontent_auth', 'true');
+    sessionStorage.setItem('opticontent_profile', JSON.stringify(user));
   };
 
   // Xử lý đăng xuất
   const handleLogout = () => {
     setIsAuthenticated(false);
-    localStorage.removeItem('opticontent_auth');
-    localStorage.removeItem('opticontent_profile');
-    localStorage.removeItem('token');
+    sessionStorage.removeItem('opticontent_auth');
+    sessionStorage.removeItem('opticontent_profile');
+    sessionStorage.removeItem('token');
     setWorkspaceDraft({ topic: '', keywords: '', platform: 'Blog', tone: 'Professional', editorContent: '', currentArticleId: '', isShared: false });
   };
 
