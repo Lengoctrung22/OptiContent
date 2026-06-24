@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { PenTool, Share2, Mail, FileText, Image as ImageIcon, Sparkles, Clock } from 'lucide-react';
 
 const Dashboard = ({ setActiveScreen, setWorkspaceDefaults, historyList = [] }) => {

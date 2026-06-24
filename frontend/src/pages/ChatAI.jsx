@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { sendChatMessage } from '../services/ai.service';
 import { Send, Bot, User, Trash2, Sparkles, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';

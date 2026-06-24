@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   Search, 
   Edit, 
@@ -15,6 +15,26 @@ import {
 } from 'lucide-react';
 import { downloadAsWord, downloadAsMarkdown, downloadAsHtml } from '../utils/exporters';
 
+// Static mock articles — defined once at module load to avoid impure Date.now() during render
+const MOCK_ARTICLES = [
+  {
+    id: 'mock-blog-1',
+    title: 'Tối ưu hóa SEO cho bài viết Blog năm 2026',
+    content: 'Dưới đây là cẩm nang chi tiết về tối ưu hóa SEO cho bài viết Blog. Chúng tôi sẽ hướng dẫn bạn cách viết bài chuẩn SEO, tối ưu tiêu đề, mô tả và mật độ từ khóa giúp website của bạn tăng hạng vượt trội trên Google Tìm kiếm mà không tốn chi phí quảng cáo...',
+    platform: 'Blog',
+    isShared: true,
+    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'mock-email-1',
+    title: 'Chiến dịch Email Marketing ra mắt sản phẩm mới',
+    content: 'Chào bạn, chúng tôi vô cùng phấn khởi được giới thiệu dòng sản phẩm OptiContent đột phá. Đây là công cụ đắc lực giúp tự động hóa quy trình sáng tạo nội dung của doanh nghiệp, giúp tăng tỷ lệ chuyển đổi khách hàng tiềm năng lên đến 200%...',
+    platform: 'Email',
+    isShared: false,
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+  }
+];
+
 const History = ({ historyList = [], onDeleteArticle, onEditArticle, onToggleShare, setActiveScreen }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
@@ -24,24 +44,7 @@ const History = ({ historyList = [], onDeleteArticle, onEditArticle, onToggleSha
   const [deletedMockIds, setDeletedMockIds] = useState([]);
   const [toggledMockIds, setToggledMockIds] = useState({});
 
-  const mockArticles = [
-    {
-      id: 'mock-blog-1',
-      title: 'Tối ưu hóa SEO cho bài viết Blog năm 2026',
-      content: 'Dưới đây là cẩm nang chi tiết về tối ưu hóa SEO cho bài viết Blog. Chúng tôi sẽ hướng dẫn bạn cách viết bài chuẩn SEO, tối ưu tiêu đề, mô tả và mật độ từ khóa giúp website của bạn tăng hạng vượt trội trên Google Tìm kiếm mà không tốn chi phí quảng cáo...',
-      platform: 'Blog',
-      isShared: true,
-      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: 'mock-email-1',
-      title: 'Chiến dịch Email Marketing ra mắt sản phẩm mới',
-      content: 'Chào bạn, chúng tôi vô cùng phấn khởi được giới thiệu dòng sản phẩm OptiContent đột phá. Đây là công cụ đắc lực giúp tự động hóa quy trình sáng tạo nội dung của doanh nghiệp, giúp tăng tỷ lệ chuyển đổi khách hàng tiềm năng lên đến 200%...',
-      platform: 'Email',
-      isShared: false,
-      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-    }
-  ];
+  const mockArticles = MOCK_ARTICLES;
 
   // Lọc bài viết thực tế
   const filteredArticles = historyList.filter(article => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Zap, 
   Check, 
@@ -111,7 +111,7 @@ const Pricing = ({ userProfile, reloadUserProfile }) => {
   }, []);
 
   // Fetch transactions history
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     setLoadingHistory(true);
     try {
       const response = await api.get('/payments/transactions');
@@ -123,13 +123,16 @@ const Pricing = ({ userProfile, reloadUserProfile }) => {
     } finally {
       setLoadingHistory(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    if (activeTab === 'history') {
-      fetchHistory();
-    }
-  }, [activeTab]);
+    const load = async () => {
+      if (activeTab === 'history') {
+        await fetchHistory();
+      }
+    };
+    load();
+  }, [activeTab, fetchHistory]);
 
   const currentPlanObj = userProfile?.currentPlan || defaultFreePlan;
   const wordLimit = currentPlanObj.wordLimit || 10000;

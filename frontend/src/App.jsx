@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   LayoutDashboard, 
   PenTool, 
-  Database, 
   Settings as SettingsIcon, 
   User, 
   Zap,
   BookOpen,
   LogOut,
   ShieldAlert,
-  CreditCard
+  CreditCard,
+  Bot
 } from 'lucide-react';
 
 import Dashboard from './pages/Dashboard.jsx';
@@ -20,31 +20,9 @@ import Auth from './pages/Auth.jsx';
 import Admin from './pages/Admin.jsx';
 import ShareView from './pages/ShareView.jsx';
 import Pricing from './pages/Pricing.jsx';
+import ChatAI from './pages/ChatAI.jsx';
 import api from './services/api.js';
 
-// Dữ liệu giả lập ban đầu để hiển thị đẹp mắt
-const mockInitialArticles = [
-  {
-    id: 'mock-1',
-    title: 'Top 5 Lợi Ích Của AI Trong Sáng Tạo Nội Dung Số',
-    content: `# Top 5 Lợi Ích Của AI Trong Sáng Tạo Nội Dung Số\n\nTrí tuệ nhân tạo (AI) đang định hình lại cách chúng ta sáng tạo nội dung hàng ngày. Dưới đây là 5 lợi ích vượt trội:\n\n1. **Tốc độ vượt trội**: Tiết kiệm 80% thời gian nghiên cứu và lập dàn ý.\n2. **Tối ưu hóa SEO**: Tự động phân bổ từ khóa và phân tích thẻ meta để nâng hạng tìm kiếm Google.\n3. **Cải thiện văn phong**: Giọng điệu đa dạng, phù hợp cho cả blog chuyên sâu hay bài đăng mạng xã hội năng động.\n4. **Giải quyết bí ý tưởng**: Tạo hàng chục dàn ý bài viết chỉ với vài từ khóa chủ đề.\n5. **Tiết kiệm chi phí**: Tối ưu hóa hiệu suất làm việc của nhóm biên tập nội dung.`,
-    platform: 'Blog',
-    tone: 'Professional',
-    keywords: 'AI sáng tạo nội dung, tối ưu SEO, viết bài tự động',
-    hasImage: true,
-    createdAt: new Date(Date.now() - 3600000 * 24).toISOString() // 1 ngày trước
-  },
-  {
-    id: 'mock-2',
-    title: 'Bí quyết thu hút triệu lượt xem trên Facebook năm 2026',
-    content: `Cách viết bài viết mạng xã hội (Facebook/Instagram) lôi cuốn và giữ chân người đọc trong 3 giây đầu tiên:\n\n🔥 **1. TIÊU ĐỀ NỔI BẬT**: Sử dụng các từ ngữ kích thích tò mò hoặc số liệu gây sốc.\n\n📌 **2. ĐỘ DÀI VỪA PHẢI**: Viết ngắn gọn, tập trung và chia nhỏ thành các đoạn bằng emoji để dễ quét mắt.\n\n👉 **3. CALL TO ACTION (CTA) MẠNH MẼ**: Kêu gọi thả tim, bình luận góc nhìn của bản thân hoặc chia sẻ bài viết để lưu lại.\n\n#marketing #facebooktips #contentcreators`,
-    platform: 'Facebook',
-    tone: 'Casual',
-    keywords: 'bài viết facebook, triệu view, viết content',
-    hasImage: false,
-    createdAt: new Date(Date.now() - 3600000 * 3).toISOString() // 3 giờ trước
-  }
-];
 
 function App() {
   const [activeScreen, setActiveScreen] = useState('dashboard');
@@ -95,7 +73,7 @@ function App() {
   const [historyList, setHistoryList] = useState([]);
 
   // Hàm tải lại thông tin hồ sơ người dùng từ server (đầy đủ plan & usage)
-  const reloadUserProfile = async () => {
+  const reloadUserProfile = useCallback(async () => {
     if (!isAuthenticated || shareId) return;
     try {
       const response = await api.get('/users/profile');
@@ -119,29 +97,33 @@ function App() {
     } catch (err) {
       console.error('Lỗi khi tải hồ sơ người dùng:', err);
     }
-  };
+  }, [isAuthenticated, shareId]);
 
   // Tải dữ liệu từ Backend API
   useEffect(() => {
-    const fetchArticles = async () => {
-      if (!isAuthenticated || shareId) return;
-      try {
-        const response = await api.get('/articles');
-        if (response.data && response.data.success) {
-          const articles = response.data.data.map(art => ({
-            ...art,
-            id: art._id
-          }));
-          setHistoryList(articles);
+    const initData = async () => {
+      const fetchArticles = async () => {
+        if (!isAuthenticated || shareId) return;
+        try {
+          const response = await api.get('/articles');
+          if (response.data && response.data.success) {
+            const articles = response.data.data.map(art => ({
+              ...art,
+              id: art._id
+            }));
+            setHistoryList(articles);
+          }
+        } catch (err) {
+          console.error('Lỗi khi tải danh sách bài viết từ server:', err);
         }
-      } catch (err) {
-        console.error('Lỗi khi tải danh sách bài viết từ server:', err);
-      }
+      };
+
+      await fetchArticles();
+      await reloadUserProfile();
     };
 
-    fetchArticles();
-    reloadUserProfile();
-  }, [isAuthenticated, shareId]);
+    initData();
+  }, [isAuthenticated, shareId, reloadUserProfile]);
 
   // Lưu cấu hình hồ sơ khi thay đổi
   useEffect(() => {
@@ -271,6 +253,7 @@ function App() {
       case 'dashboard': return 'Bảng điều khiển';
       case 'workspace': return 'Phòng làm việc (Editor)';
       case 'history': return 'Thư viện bài viết';
+      case 'chatai': return 'Trợ lý AI Chat';
       case 'settings': return 'Cài đặt';
       case 'admin': return 'Quản trị hệ thống';
       case 'pricing': return 'Gói dịch vụ & Thanh toán';
@@ -338,6 +321,18 @@ function App() {
             >
               <BookOpen size={18} />
               Thư viện bài viết
+            </button>
+
+            <button 
+              className={`menu-item ${activeScreen === 'chatai' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveScreen('chatai');
+                setWorkspaceDefaults(null);
+                setActiveArticle(null);
+              }}
+            >
+              <Bot size={18} />
+              Trợ lý AI Chat
             </button>
 
             {(userProfile.role === 'Admin' || userProfile.email === 'admin@opticontent.com' || userProfile.email === 'trongnv@gmail.com') && (
@@ -499,6 +494,10 @@ function App() {
 
           {activeScreen === 'admin' && (
             <Admin />
+          )}
+
+          {activeScreen === 'chatai' && (
+            <ChatAI />
           )}
         </div>
       </main>

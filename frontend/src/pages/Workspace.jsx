@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import { useState, useRef, useEffect } from 'react';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 import { marked } from 'marked';
 
 // Cấu hình marked: bật breaks để mỗi dấu xuống dòng (\n) tạo thẻ <br>,
@@ -23,7 +23,7 @@ import {
   FileText, 
   Check, 
   Loader2, 
-  MessageSquare,
+
   Wand2,
   Share2,
   Download,
@@ -41,8 +41,6 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
     setSelectedVoice,
     isSpeaking,
     isPaused,
-    rate,
-    setRate,
     speak,
     pause,
     resume,
@@ -126,15 +124,17 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
     };
   }, [setWorkspaceDraft]);
 
-  // Apply default values from dashboard quick link
-  useEffect(() => {
-    if (defaultValues) {
-      if (defaultValues.platform) setPlatform(defaultValues.platform);
-    }
-  }, [defaultValues]);
+  // Apply default values from dashboard quick link (render-time sync — React-recommended pattern)
+  const [prevDefaultValues, setPrevDefaultValues] = useState(defaultValues);
+  if (defaultValues !== prevDefaultValues) {
+    setPrevDefaultValues(defaultValues);
+    if (defaultValues?.platform) setPlatform(defaultValues.platform);
+  }
 
-  // Load article if editing from Library
-  useEffect(() => {
+  // Load article if editing from Library (render-time sync — avoids cascading-render antipattern)
+  const [prevActiveArticle, setPrevActiveArticle] = useState(activeArticle);
+  if (activeArticle !== prevActiveArticle) {
+    setPrevActiveArticle(activeArticle);
     if (activeArticle) {
       setTopic(activeArticle.title || '');
       setKeywords(activeArticle.keywords || '');
@@ -148,7 +148,7 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
       setCurrentArticleId(activeArticle.id || '');
     }
     // Không xóa nội dung khi activeArticle là null — giữ lại bản nháp đang soạn
-  }, [activeArticle]);
+  }
 
 
   const handleGenerate = async (e) => {
@@ -329,7 +329,7 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
     const textToProcess = selectedText;
     setSelectedText('');
 
-    let actionPrompt = '';
+    let actionPrompt;
     switch (action) {
       case 'rewrite':
         actionPrompt = `Hãy viết lại đoạn văn sau để mượt mà và tự nhiên hơn: "${textToProcess}". Chỉ trả về đoạn văn mới sau khi viết lại, không giải thích gì thêm.`;

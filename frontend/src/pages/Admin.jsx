@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Users, 
   Activity, 
   DollarSign, 
   Key, 
-  ShieldAlert, 
   Lock, 
   Unlock, 
   Search, 
@@ -13,7 +12,6 @@ import {
   Plus, 
   Trash2, 
   CheckCircle,
-  Database,
   RefreshCw,
   Terminal,
   CreditCard,
@@ -60,19 +58,18 @@ const Admin = () => {
   const [tempPasswordInfo, setTempPasswordInfo] = useState(null);
   const [editingPlan, setEditingPlan] = useState(null);
 
-  // Load data based on active tab
-  useEffect(() => {
-    fetchTabData();
-  }, [activeTab]);
-
-  // Load users separately when searchTerm changes (with debounce/trigger)
-  useEffect(() => {
-    if (activeTab === 'users') {
-      fetchUsers();
+  // Declare fetch functions BEFORE their useEffect hooks to avoid TDZ / stale closures
+  const fetchUsers = useCallback(async () => {
+    try {
+      const res = await api.get('/admin/users', { params: { search: searchTerm } });
+      setUsersList(res.data.data);
+    } catch (_err) {
+      console.error('[Fetch Users Error]', _err);
+      setError('Lỗi tải danh sách người dùng!');
     }
   }, [searchTerm]);
 
-  const fetchTabData = async () => {
+  const fetchTabData = useCallback(async () => {
     setError(null);
     setSuccessMsg(null);
     try {
@@ -110,22 +107,30 @@ const Admin = () => {
         setSystemLogs(logsRes.data.data);
         setIsLoading(false);
       }
-    } catch (err) {
-      console.error('[Admin Fetch Error]', err);
-      setError(err.response?.data?.message || 'Có lỗi xảy ra khi tải dữ liệu từ server!');
+    } catch (_err) {
+      console.error('[Admin Fetch Error]', _err);
+      setError(_err.response?.data?.message || 'Có lỗi xảy ra khi tải dữ liệu từ server!');
       setIsLoading(false);
     }
-  };
+  }, [activeTab, fetchUsers]);
 
-  const fetchUsers = async () => {
-    try {
-      const res = await api.get('/admin/users', { params: { search: searchTerm } });
-      setUsersList(res.data.data);
-    } catch (err) {
-      console.error('[Fetch Users Error]', err);
-      setError('Lỗi tải danh sách người dùng!');
-    }
-  };
+  // Load data based on active tab
+  useEffect(() => {
+    const load = async () => {
+      await fetchTabData();
+    };
+    load();
+  }, [fetchTabData]);
+
+  // Load users separately when searchTerm changes (with debounce/trigger)
+  useEffect(() => {
+    const load = async () => {
+      if (activeTab === 'users') {
+        await fetchUsers();
+      }
+    };
+    load();
+  }, [activeTab, fetchUsers]);
 
   // Actions
   const toggleUserStatus = async (userId) => {
@@ -193,7 +198,7 @@ const Admin = () => {
       const res = await api.get('/admin/logs');
       setSystemLogs(res.data.data);
       showSuccess('Đã làm mới danh sách nhật ký!');
-    } catch (err) {
+    } catch {
       alert('Không thể tải nhật ký hệ thống!');
     }
   };
@@ -204,7 +209,7 @@ const Admin = () => {
       await api.delete('/admin/logs');
       setSystemLogs([]);
       showSuccess('Đã xóa toàn bộ nhật ký hệ thống!');
-    } catch (err) {
+    } catch {
       alert('Lỗi xóa nhật ký hệ thống!');
     }
   };

@@ -1,38 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { Zap, Copy, FileText, Calendar, User, Check, AlertCircle } from 'lucide-react';
 import { downloadAsWord } from '../utils/exporters';
 
 const ShareView = ({ articleId }) => {
   const [article, setArticle] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(() => !!articleId);
+  const [error, setError] = useState(() => !articleId ? 'Đường dẫn bài viết không hợp lệ.' : null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    if (!articleId) return;
+
+    let cancelled = false;
     const fetchPublicArticle = async () => {
       try {
         setLoading(true);
         const response = await api.get(`/articles/public/${articleId}`);
+        if (cancelled) return;
         if (response.data && response.data.success) {
           setArticle(response.data.data);
         } else {
           setError('Không thể tải bài viết này.');
         }
       } catch (err) {
+        if (cancelled) return;
         console.error('Lỗi tải bài viết chia sẻ:', err);
         setError(err.response?.data?.message || 'Bài viết không tồn tại hoặc đã bị tắt chế độ chia sẻ công khai.');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
-    if (articleId) {
-      fetchPublicArticle();
-    } else {
-      setError('Đường dẫn bài viết không hợp lệ.');
-      setLoading(false);
-    }
+    fetchPublicArticle();
+    return () => { cancelled = true; };
   }, [articleId]);
 
   const handleCopyContent = () => {

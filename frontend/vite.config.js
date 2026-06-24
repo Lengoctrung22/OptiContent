@@ -7,4 +7,21 @@ export default defineConfig({
   server: {
     open: true, // Tự động mở trình duyệt khi khởi chạy npm run dev
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react-quill-new') || id.includes('quill')) {
+              return 'vendor-quill';
+            }
+            if (id.includes('lucide-react')) {
+              return 'vendor-lucide';
+            }
+            return 'vendor';
+          }
+        }
+      }
+    }
+  }
 })

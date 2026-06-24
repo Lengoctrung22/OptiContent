@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Zap, Mail, Lock, User, ArrowRight, Eye, EyeOff, CheckCircle2, Sparkles, TrendingUp, ShieldCheck, ArrowLeft, KeyRound, MailCheck } from 'lucide-react';
 import api from '../services/api.js';
 

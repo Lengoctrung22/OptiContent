@@ -26,16 +26,15 @@ export const useSpeechSynthesis = () => {
   useEffect(() => {
     if (!synthRef.current) return;
 
+    const synth = synthRef.current; // Capture ref value for cleanup
     loadVoices();
-    if (synthRef.current.onvoiceschanged !== undefined) {
-      synthRef.current.onvoiceschanged = loadVoices;
+    if (synth.onvoiceschanged !== undefined) {
+      synth.onvoiceschanged = loadVoices;
     }
 
     // Cleanup: Dừng phát khi unmount component
     return () => {
-      if (synthRef.current) {
-        synthRef.current.cancel();
-      }
+      synth.cancel();
     };
   }, []);
 
