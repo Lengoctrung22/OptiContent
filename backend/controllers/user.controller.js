@@ -1,12 +1,44 @@
 import { User } from '../models/index.js';
 
 /**
+ * @desc    Lấy thông tin hồ sơ người dùng hiện tại
+ * @route   GET /api/v1/users/profile
+ * @access  Private
+ */
+export const getUserProfile = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id).populate('currentPlan');
+    if (!user) {
+      res.status(404);
+      return next(new Error('Không tìm thấy thông tin người dùng!'));
+    }
+    res.status(200).json({
+      success: true,
+      data: {
+        id: user._id,
+        fullName: user.name,
+        email: user.email,
+        avatar: user.avatar,
+        role: user.role,
+        status: user.status,
+        brandVoice: user.brandVoice,
+        integrations: user.integrations,
+        monthlyUsage: user.monthlyUsage,
+        currentPlan: user.currentPlan
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * @desc    Cập nhật thông tin hồ sơ người dùng
  * @route   PUT /api/v1/users/profile
  * @access  Private
  */
 export const updateUserProfile = async (req, res, next) => {
-  const { name, email, avatar } = req.body;
+  const { name, email, avatar, integrations, brandVoice } = req.body;
 
   if (!name) {
     res.status(400);
@@ -41,6 +73,12 @@ export const updateUserProfile = async (req, res, next) => {
     if (avatar !== undefined) {
       user.avatar = avatar;
     }
+    if (integrations !== undefined) {
+      user.integrations = integrations;
+    }
+    if (brandVoice !== undefined) {
+      user.brandVoice = brandVoice;
+    }
 
     await user.save();
 
@@ -53,7 +91,9 @@ export const updateUserProfile = async (req, res, next) => {
         email: user.email,
         avatar: user.avatar,
         role: user.role,
-        status: user.status
+        status: user.status,
+        integrations: user.integrations,
+        brandVoice: user.brandVoice
       }
     });
   } catch (error) {

@@ -10,9 +10,11 @@ marked.setOptions({
   gfm: true,
 });
 
-import { generateContent } from '../services/ai.service.js';
+import { generateContent, generateFromDocument } from '../services/ai.service.js';
+
 import api from '../services/api.js';
 import { downloadAsWord, downloadAsMarkdown, downloadAsHtml } from '../utils/exporters.js';
+import { useSpeechSynthesis } from '../utils/useSpeechSynthesis.js';
 import { 
   Sparkles, 
   Copy, 
@@ -25,10 +27,28 @@ import {
   Wand2,
   Share2,
   Download,
-  Link
+  Link,
+  Volume2,
+  VolumeX,
+  Pause,
+  Play
 } from 'lucide-react';
 
 const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, clearActiveArticle, workspaceDraft, setWorkspaceDraft }) => {
+  const {
+    voices,
+    selectedVoice,
+    setSelectedVoice,
+    isSpeaking,
+    isPaused,
+    rate,
+    setRate,
+    speak,
+    pause,
+    resume,
+    stop,
+  } = useSpeechSynthesis();
+
   const [topic, setTopic] = useState(workspaceDraft?.topic || '');
   const [keywords, setKeywords] = useState(workspaceDraft?.keywords || '');
   const [platform, setPlatform] = useState(workspaceDraft?.platform || 'Blog');
@@ -38,6 +58,34 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
   const [needOutline, setNeedOutline] = useState(false);
   const [needSEO, setNeedSEO] = useState(false);
   const [needImage, setNeedImage] = useState(false);
+  
+  // File upload state
+  const [selectedFile, setSelectedFile] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const allowedTypes = ['.txt', '.pdf', '.docx'];
+      const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+      if (!allowedTypes.includes(ext)) {
+        alert('Chỉ chấp nhận file .txt, .pdf hoặc .docx');
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        alert('Dung lượng file không được vượt quá 10MB');
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
   
   // Editor state
   const [editorContent, setEditorContent] = useState(workspaceDraft?.editorContent || '');
@@ -109,26 +157,44 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
 
     setIsGenerating(true);
     setSaveStatus('');
-    
-    // Construct rich prompt
-    let prompt = `Hãy viết một bài viết cho nền tảng ${platform} về chủ đề: "${topic}".\n`;
-    if (keywords.trim()) {
-      prompt += `Yêu cầu chèn các từ khóa sau một cách tự nhiên: ${keywords}.\n`;
-    }
-    prompt += `Giọng văn (Tone of voice) yêu cầu: ${tone}.\n`;
-    
-    if (needOutline) {
-      prompt += `Yêu cầu bổ sung thêm phần Dàn ý bài viết chi tiết ở phần đầu.\n`;
-    }
-    if (needSEO) {
-      prompt += `Yêu cầu viết thêm thẻ tiêu đề SEO Title (dưới 60 ký tự) và thẻ Meta Description (dưới 160 ký tự) ở cuối bài.\n`;
-    }
-    if (needImage) {
-      prompt += `Yêu cầu mô tả chi tiết 1 prompt gợi ý để vẽ ảnh minh họa phù hợp cho bài viết này (sử dụng DALL-E/Midjourney).\n`;
-    }
 
     try {
-      const response = await generateContent(prompt);
+      let response;
+
+      if (selectedFile) {
+        // Gửi kèm file qua FormData
+        const formData = new FormData();
+        formData.append('document', selectedFile);
+        formData.append('topic', topic);
+        formData.append('keywords', keywords);
+        formData.append('platform', platform);
+        formData.append('tone', tone);
+        formData.append('needOutline', needOutline);
+        formData.append('needSEO', needSEO);
+        formData.append('needImage', needImage);
+
+        response = await generateFromDocument(formData);
+      } else {
+        // Xây dựng prompt thông thường
+        let prompt = `Hãy viết một bài viết cho nền tảng ${platform} về chủ đề: "${topic}".\n`;
+        if (keywords.trim()) {
+          prompt += `Yêu cầu chèn các từ khóa sau một cách tự nhiên: ${keywords}.\n`;
+        }
+        prompt += `Giọng văn (Tone of voice) yêu cầu: ${tone}.\n`;
+        
+        if (needOutline) {
+          prompt += `Yêu cầu bổ sung thêm phần Dàn ý bài viết chi tiết ở phần đầu.\n`;
+        }
+        if (needSEO) {
+          prompt += `Yêu cầu viết thêm thẻ tiêu đề SEO Title (dưới 60 ký tự) và thẻ Meta Description (dưới 160 ký tự) ở cuối bài.\n`;
+        }
+        if (needImage) {
+          prompt += `Yêu cầu mô tả chi tiết 1 prompt gợi ý để vẽ ảnh minh họa phù hợp cho bài viết này (sử dụng DALL-E/Midjourney).\n`;
+        }
+
+        response = await generateContent(prompt);
+      }
+
       if (response.success && response.data) {
         const htmlContent = marked.parse(response.data);
         setEditorContent(htmlContent);
@@ -137,7 +203,7 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
       }
     } catch (error) {
       console.error('Error generating content:', error);
-      alert('Có lỗi xảy ra khi kết nối với máy chủ AI. Hãy kiểm tra khóa API của bạn.');
+      alert(error.response?.data?.message || 'Có lỗi xảy ra khi kết nối với máy chủ AI. Hãy kiểm tra khóa API của bạn.');
     } finally {
       setIsGenerating(false);
     }
@@ -366,6 +432,73 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
             </select>
           </div>
 
+          {/* Khung tải tài liệu tham khảo */}
+          <div className="form-group">
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Tài liệu tham khảo (Tùy chọn)</span>
+              {selectedFile && (
+                <button 
+                  type="button" 
+                  onClick={handleRemoveFile} 
+                  style={{ color: '#ef4444', background: 'none', border: 'none', fontSize: '11px', cursor: 'pointer', fontWeight: '500' }}
+                >
+                  Gỡ bỏ
+                </button>
+              )}
+            </label>
+            
+            {!selectedFile ? (
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  border: '2px dashed var(--border-color, #e2e8f0)',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  backgroundColor: '#f8fafc',
+                  transition: 'border-color 0.2s',
+                }}
+                onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--primary, #4f46e5)'}
+                onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--border-color, #e2e8f0)'}
+              >
+                <span style={{ fontSize: '12px', color: '#64748b', display: 'block' }}>
+                  Nhấp để tải lên PDF, DOCX, TXT
+                </span>
+                <span style={{ fontSize: '10px', color: '#94a3b8' }}>Tối đa 10MB</span>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                  accept=".pdf,.docx,.txt" 
+                  style={{ display: 'none' }} 
+                />
+              </div>
+            ) : (
+              <div 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 12px',
+                  backgroundColor: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  color: '#166534'
+                }}
+              >
+                <FileText size={16} style={{ color: '#15803d', flexShrink: 0 }} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '500' }}>
+                  {selectedFile.name}
+                </span>
+                <span style={{ fontSize: '10px', color: '#166534', opacity: 0.8, marginLeft: 'auto', flexShrink: 0 }}>
+                  ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                </span>
+              </div>
+            )}
+          </div>
+
           <div className="form-row-switch">
             <div className="switch-group">
               <div className="switch-label">
@@ -472,7 +605,7 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
                 }}
                 title="Đóng chế độ chỉnh sửa và tạo bài viết mới"
               >
-                Tạo bài viết mới
+                Tạo mới
               </button>
             )}
 
@@ -494,7 +627,7 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
               style={currentArticleId ? { backgroundColor: 'var(--primary)', color: '#ffffff', borderColor: 'var(--primary)' } : {}}
             >
               <Save size={14} />
-              {currentArticleId ? 'Cập nhật bài viết' : 'Lưu thư viện'}
+              {currentArticleId ? 'Cập nhật' : 'Lưu bài'}
             </button>
 
             {/* Dropdown Tải xuống */}
@@ -509,7 +642,7 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
                 title="Tải bài viết về máy"
               >
                 <Download size={14} />
-                Tải xuống
+                Tải về
               </button>
               {showDownloadMenu && (
                 <div className="dropdown-menu-card">
@@ -632,6 +765,62 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
               )}
             </div>
 
+            {/* Bộ điều khiển Giọng đọc */}
+            <div className="speech-controls-group">
+              {isSpeaking ? (
+                <>
+                  <button
+                    className="btn-secondary btn-speech active"
+                    onClick={stop}
+                    title="Dừng nghe bài viết"
+                    type="button"
+                  >
+                    <VolumeX size={14} />
+                    Dừng nghe
+                  </button>
+                  <button
+                    className="btn-secondary btn-speech-icon"
+                    onClick={isPaused ? resume : pause}
+                    title={isPaused ? "Tiếp tục" : "Tạm dừng"}
+                    type="button"
+                  >
+                    {isPaused ? <Play size={14} /> : <Pause size={14} />}
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="btn-secondary btn-speech"
+                  onClick={() => speak(editorContent)}
+                  disabled={!editorContent}
+                  title="Nghe bài viết"
+                  type="button"
+                >
+                  <Volume2 size={14} />
+                  Nghe bài
+                </button>
+              )}
+
+              {voices.length > 0 && (
+                <div className="speech-dropdown-container">
+                  <select
+                    className="speech-voice-select"
+                    value={selectedVoice?.name || ''}
+                    onChange={(e) => {
+                      const voice = voices.find(v => v.name === e.target.value);
+                      if (voice) setSelectedVoice(voice);
+                    }}
+                    title="Chọn giọng đọc"
+                  >
+                    {voices.map((voice) => (
+                      <option key={voice.name} value={voice.name}>
+                        {voice.name.replace('Microsoft', '').replace('Google', '').trim()} ({voice.lang})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
             <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--border-color)', margin: '0 4px' }} />
 
             <button 
@@ -641,7 +830,7 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
               title="Đăng lên WordPress/Facebook"
             >
               <Globe size={14} />
-              Đăng trực tiếp
+              Đăng bài
             </button>
           </div>
         </div>

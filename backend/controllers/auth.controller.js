@@ -1,5 +1,7 @@
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { User, Plan } from '../models/index.js';
+import sendEmail, { getResetPasswordEmailTemplate } from '../services/email.service.js';
 
 /**
  * Tạo token JWT để xác thực phiên làm việc của người dùng
@@ -61,11 +63,6 @@ export const register = async (req, res, next) => {
     });
 
     if (user) {
-      // Tự động cộng 1 vào số lượng user của gói cước tương ứng
-      if (freePlan) {
-        await Plan.findByIdAndUpdate(freePlan._id, { $inc: { usersCount: 1 } });
-      }
-
       // Trả về dữ liệu thành công kèm JWT Token
       res.status(201).json({
         success: true,
@@ -209,11 +206,6 @@ export const googleLogin = async (req, res, next) => {
         avatar: avatar || '',
         currentPlan: currentPlanId,
       });
-
-      // Cộng 1 vào số lượng user của gói Free
-      if (freePlan) {
-        await Plan.findByIdAndUpdate(freePlan._id, { $inc: { usersCount: 1 } });
-      }
     }
 
     // 4. Cấp mã thông báo JWT đăng nhập thành công
@@ -230,6 +222,151 @@ export const googleLogin = async (req, res, next) => {
         currentPlan: user.currentPlan,
         avatar: user.avatar,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Yêu cầu đặt lại mật khẩu - Gửi email chứa link reset
+ * @route   POST /api/v1/auth/forgot-password
+ * @access  Public
+ */
+export const forgotPassword = async (req, res, next) => {
+  const { email } = req.body;
+
+  // 1. Kiểm tra đầu vào
+  if (!email) {
+    res.status(400);
+    return next(new Error('Vui lòng cung cấp địa chỉ email!'));
+  }
+
+  try {
+    // 2. Tìm người dùng bằng email
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      // Trả về thông báo giống nhau cho cả 2 trường hợp để bảo mật (chống enum attack)
+      return res.status(200).json({
+        success: true,
+        message: 'Nếu email tồn tại trong hệ thống, chúng tôi đã gửi hướng dẫn đặt lại mật khẩu.',
+      });
+    }
+
+    // 3. Kiểm tra nếu người dùng đăng ký bằng Google (không có mật khẩu local)
+    if (user.authProvider === 'google' && !user.password) {
+      return res.status(200).json({
+        success: true,
+        message: 'Nếu email tồn tại trong hệ thống, chúng tôi đã gửi hướng dẫn đặt lại mật khẩu.',
+      });
+    }
+
+    // 4. Tạo token đặt lại mật khẩu
+    const resetToken = user.getResetPasswordToken();
+    await user.save({ validateBeforeSave: false });
+
+    // 5. Tạo URL reset password cho frontend
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
+
+    // 6. Gửi email
+    try {
+      const emailHtml = getResetPasswordEmailTemplate(user.name, resetUrl);
+      
+      await sendEmail({
+        to: user.email,
+        subject: '🔑 Đặt lại mật khẩu OptiContent',
+        html: emailHtml,
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Nếu email tồn tại trong hệ thống, chúng tôi đã gửi hướng dẫn đặt lại mật khẩu.',
+      });
+    } catch (emailError) {
+      console.error('[Auth] Lỗi gửi email reset password:', emailError.message);
+
+      // Ở chế độ phát triển (development), in link ra console để dễ dàng kiểm thử mà không cần cấu hình SMTP thật
+      if (process.env.NODE_ENV === 'development') {
+        console.log('\n==================================================');
+        console.log('[DEV MODE] THÔNG TIN ĐẶT LẠI MẬT KHẨU:');
+        console.log(`Email nhận: ${user.email}`);
+        console.log(`Đường dẫn khôi phục: ${resetUrl}`);
+        console.log('==================================================\n');
+
+        return res.status(200).json({
+          success: true,
+          message: '[Chế độ Dev] Gửi email thất bại nhưng link khôi phục đã được in ra console của Server Backend!',
+          devResetUrl: resetUrl
+        });
+      }
+
+      // Nếu gửi email thất bại trong production, xóa token đã lưu trong DB
+      user.resetPasswordToken = null;
+      user.resetPasswordExpire = null;
+      await user.save({ validateBeforeSave: false });
+
+      res.status(500);
+      return next(new Error('Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại sau!'));
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Đặt lại mật khẩu mới bằng token từ email
+ * @route   POST /api/v1/auth/reset-password/:token
+ * @access  Public
+ */
+export const resetPassword = async (req, res, next) => {
+  const { password, confirmPassword } = req.body;
+
+  // 1. Kiểm tra đầu vào
+  if (!password || !confirmPassword) {
+    res.status(400);
+    return next(new Error('Vui lòng nhập mật khẩu mới và xác nhận mật khẩu!'));
+  }
+
+  if (password !== confirmPassword) {
+    res.status(400);
+    return next(new Error('Mật khẩu xác nhận không khớp!'));
+  }
+
+  if (password.length < 8) {
+    res.status(400);
+    return next(new Error('Mật khẩu mới phải chứa ít nhất 8 ký tự!'));
+  }
+
+  try {
+    // 2. Hash token từ URL để so khớp với token đã lưu trong DB
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(req.params.token)
+      .digest('hex');
+
+    // 3. Tìm user có token khớp VÀ chưa hết hạn
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      res.status(400);
+      return next(new Error('Token đặt lại mật khẩu không hợp lệ hoặc đã hết hạn!'));
+    }
+
+    // 4. Cập nhật mật khẩu mới (pre-save hook sẽ tự động hash bằng bcrypt)
+    user.password = password;
+    user.resetPasswordToken = null;
+    user.resetPasswordExpire = null;
+    await user.save();
+
+    // 5. Trả về thành công
+    res.status(200).json({
+      success: true,
+      message: 'Đặt lại mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới.',
     });
   } catch (error) {
     next(error);

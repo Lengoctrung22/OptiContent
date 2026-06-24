@@ -9,8 +9,8 @@ const connectDB = async () => {
     const conn = await mongoose.connect(uri);
     console.log(`[Database] MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
-    console.error(`[Database Warning] Chưa thể kết nối tới MongoDB: ${error.message}`);
-    console.log('[Database Info] API Server vẫn tiếp tục chạy không có DB.');
+    console.error(`[Database FATAL] Không thể kết nối tới MongoDB: ${error.message}`);
+    process.exit(1);
   }
 };
 

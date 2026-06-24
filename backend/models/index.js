@@ -12,3 +12,5 @@ export { default as ChatSession } from './ChatSession.model.js';
 export { default as Plan } from './Plan.model.js';
 export { default as Transaction } from './Transaction.model.js';
 export { default as SystemLog } from './SystemLog.model.js';
+export { default as SystemConfig } from './SystemConfig.model.js';
+

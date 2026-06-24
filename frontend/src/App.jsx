@@ -8,7 +8,8 @@ import {
   Zap,
   BookOpen,
   LogOut,
-  ShieldAlert
+  ShieldAlert,
+  CreditCard
 } from 'lucide-react';
 
 import Dashboard from './pages/Dashboard.jsx';
@@ -18,6 +19,7 @@ import Settings from './pages/Settings.jsx';
 import Auth from './pages/Auth.jsx';
 import Admin from './pages/Admin.jsx';
 import ShareView from './pages/ShareView.jsx';
+import Pricing from './pages/Pricing.jsx';
 import api from './services/api.js';
 
 // Dữ liệu giả lập ban đầu để hiển thị đẹp mắt
@@ -69,6 +71,15 @@ function App() {
     return '';
   });
 
+  // Trạng thái đặt lại mật khẩu (khi user click link từ email)
+  const [resetToken] = useState(() => {
+    const path = window.location.pathname;
+    if (path.startsWith('/reset-password/')) {
+      return path.split('/reset-password/')[1];
+    }
+    return '';
+  });
+
   // Trạng thái đăng nhập
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem('opticontent_auth') === 'true';
@@ -82,6 +93,33 @@ function App() {
 
   // Quản lý danh sách bài viết từ Backend
   const [historyList, setHistoryList] = useState([]);
+
+  // Hàm tải lại thông tin hồ sơ người dùng từ server (đầy đủ plan & usage)
+  const reloadUserProfile = async () => {
+    if (!isAuthenticated || shareId) return;
+    try {
+      const response = await api.get('/users/profile');
+      if (response.data && response.data.success) {
+        const profileData = response.data.data;
+        const updated = {
+          id: profileData.id,
+          name: profileData.fullName,
+          email: profileData.email,
+          avatar: profileData.avatar || '',
+          role: profileData.role,
+          status: profileData.status,
+          brandVoice: profileData.brandVoice || '',
+          integrations: profileData.integrations || { wordpress: { connected: false }, facebook: { connected: false } },
+          currentPlan: profileData.currentPlan || null,
+          monthlyUsage: profileData.monthlyUsage || { wordsUsed: 0, imagesUsed: 0 }
+        };
+        setUserProfile(updated);
+        localStorage.setItem('opticontent_profile', JSON.stringify(updated));
+      }
+    } catch (err) {
+      console.error('Lỗi khi tải hồ sơ người dùng:', err);
+    }
+  };
 
   // Tải dữ liệu từ Backend API
   useEffect(() => {
@@ -102,6 +140,7 @@ function App() {
     };
 
     fetchArticles();
+    reloadUserProfile();
   }, [isAuthenticated, shareId]);
 
   // Lưu cấu hình hồ sơ khi thay đổi
@@ -234,6 +273,7 @@ function App() {
       case 'history': return 'Thư viện bài viết';
       case 'settings': return 'Cài đặt';
       case 'admin': return 'Quản trị hệ thống';
+      case 'pricing': return 'Gói dịch vụ & Thanh toán';
       default: return 'OptiContent';
     }
   };
@@ -241,6 +281,11 @@ function App() {
   // Nếu là liên kết chia sẻ công khai, hiển thị trực tiếp chế độ đọc (Reader Mode)
   if (shareId) {
     return <ShareView articleId={shareId} />;
+  }
+
+  // Nếu là liên kết đặt lại mật khẩu, luôn hiển thị form reset password
+  if (resetToken) {
+    return <Auth onLogin={handleLogin} resetToken={resetToken} />;
   }
 
   // Nếu chưa đăng nhập, chỉ render màn hình Auth
@@ -311,6 +356,18 @@ function App() {
             )}
 
             <button 
+              className={`menu-item ${activeScreen === 'pricing' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveScreen('pricing');
+                setWorkspaceDefaults(null);
+                setActiveArticle(null);
+              }}
+            >
+              <CreditCard size={18} style={{ color: '#fbbf24' }} />
+              Nâng cấp gói cước
+            </button>
+
+            <button 
               className={`menu-item ${activeScreen === 'settings' ? 'active' : ''}`}
               onClick={() => {
                 setActiveScreen('settings');
@@ -354,7 +411,30 @@ function App() {
         {/* Header */}
         <header className="main-header">
           <h2>{getScreenTitle()}</h2>
-          <div className="header-actions">
+          <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button 
+              className="premium-upgrade-badge"
+              style={{
+                background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+                color: '#0f172a',
+                border: 'none',
+                borderRadius: '20px',
+                padding: '6px 14px',
+                fontSize: '11px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 4px 12px rgba(245, 158, 11, 0.15)',
+                transition: 'transform 0.2s ease'
+              }}
+              onClick={() => setActiveScreen('pricing')}
+            >
+              <Zap size={10} fill="#0f172a" />
+              {userProfile.currentPlan?.name || 'Gói Miễn Phí'}
+            </button>
+
             <div className="user-badge" style={{ gap: '10px', padding: '4px 12px 4px 6px' }}>
               {userProfile.avatar ? (
                 <img 
@@ -407,6 +487,13 @@ function App() {
             <Settings 
               userProfile={userProfile}
               setUserProfile={setUserProfile}
+            />
+          )}
+
+          {activeScreen === 'pricing' && (
+            <Pricing 
+              userProfile={userProfile}
+              reloadUserProfile={reloadUserProfile}
             />
           )}
 

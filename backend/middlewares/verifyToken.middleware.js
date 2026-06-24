@@ -49,4 +49,19 @@ export const verifyToken = async (req, res, next) => {
     return next(new Error('Yêu cầu bị từ chối, không tìm thấy token xác thực trong request headers!'));
   }
 };
+
+/**
+ * Middleware: isAdmin
+ * Phân quyền chỉ cho phép Admin truy cập tài nguyên
+ */
+export const isAdmin = (req, res, next) => {
+  if (req.user && req.user.role === 'Admin') {
+    next();
+  } else {
+    res.status(403);
+    next(new Error('Quyền truy cập bị từ chối. Chỉ dành cho tài khoản Quản trị viên!'));
+  }
+};
+
 export default verifyToken;
+

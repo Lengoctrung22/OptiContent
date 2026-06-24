@@ -20,3 +20,18 @@ export const generateContent = async (prompt) => {
   const response = await api.post('/ai/generate', { prompt });
   return response.data; // Trả về dạng { success: true, data: "..." }
 };
+
+/**
+ * Gửi yêu cầu sinh nội dung dựa trên tài liệu đính kèm
+ * @param {FormData} formData - Chứa file và các thông tin cấu hình
+ * @returns {Promise<Object>}
+ */
+export const generateFromDocument = async (formData) => {
+  const response = await api.post('/ai/generate-from-document', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data; // Trả về dạng { success: true, data: "..." }
+};
+

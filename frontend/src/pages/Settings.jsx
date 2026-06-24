@@ -22,14 +22,27 @@ const Settings = ({ userProfile, setUserProfile }) => {
   const [passwordSuccess, setPasswordSuccess] = useState(false);
 
   // Integrations toggles
-  const [wpConnected, setWpConnected] = useState(true);
-  const [fbConnected, setFbConnected] = useState(false);
+  const [wpConnected, setWpConnected] = useState(userProfile?.integrations?.wordpress?.connected || false);
+  const [fbConnected, setFbConnected] = useState(userProfile?.integrations?.facebook?.connected || false);
+
+  // Sync state with userProfile when userProfile changes
+  React.useEffect(() => {
+    if (userProfile) {
+      setDisplayName(userProfile.name || '');
+      setEmail(userProfile.email || '');
+      if (userProfile.brandVoice) {
+        setBrandVoiceText(userProfile.brandVoice);
+      }
+      setWpConnected(userProfile.integrations?.wordpress?.connected || false);
+      setFbConnected(userProfile.integrations?.facebook?.connected || false);
+    }
+  }, [userProfile]);
 
   // Default avatar image if not set
   const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E";
 
   const handleSaveSettings = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setIsSaving(true);
     setSavedSuccess(false);
     
@@ -37,7 +50,9 @@ const Settings = ({ userProfile, setUserProfile }) => {
       const response = await api.put('/users/profile', {
         name: displayName,
         email: email,
-        avatar: userProfile?.avatar || ''
+        avatar: userProfile?.avatar || '',
+        integrations: userProfile?.integrations,
+        brandVoice: brandVoiceText
       });
       
       if (response.data && response.data.success) {
@@ -48,7 +63,9 @@ const Settings = ({ userProfile, setUserProfile }) => {
             ...userProfile,
             name: response.data.data.fullName,
             email: response.data.data.email,
-            avatar: response.data.data.avatar
+            avatar: response.data.data.avatar,
+            integrations: response.data.data.integrations,
+            brandVoice: response.data.data.brandVoice
           };
           setUserProfile(updatedUser);
           localStorage.setItem('opticontent_profile', JSON.stringify(updatedUser));
@@ -71,17 +88,88 @@ const Settings = ({ userProfile, setUserProfile }) => {
       return;
     }
 
-    // Convert to base64 to store in local state/localStorage
     const reader = new FileReader();
-    reader.onloadend = () => {
+    reader.onloadend = async () => {
+      const base64Avatar = reader.result;
+      
+      // Update local state first for instant UI response
       if (setUserProfile) {
         setUserProfile(prev => ({
           ...prev,
-          avatar: reader.result
+          avatar: base64Avatar
         }));
+      }
+
+      // Automatically persist avatar change to the server
+      try {
+        setIsSaving(true);
+        const response = await api.put('/users/profile', {
+          name: displayName,
+          email: email,
+          avatar: base64Avatar,
+          integrations: userProfile?.integrations,
+          brandVoice: userProfile?.brandVoice || brandVoiceText
+        });
+        
+        if (response.data && response.data.success) {
+          setIsSaving(false);
+          setSavedSuccess(true);
+          if (setUserProfile) {
+            const updatedUser = {
+              ...userProfile,
+              name: response.data.data.fullName,
+              email: response.data.data.email,
+              avatar: response.data.data.avatar,
+              integrations: response.data.data.integrations,
+              brandVoice: response.data.data.brandVoice
+            };
+            setUserProfile(updatedUser);
+            localStorage.setItem('opticontent_profile', JSON.stringify(updatedUser));
+          }
+          setTimeout(() => setSavedSuccess(false), 2500);
+        }
+      } catch (err) {
+        console.error('Lỗi tự động lưu avatar:', err);
+        alert('Có lỗi xảy ra khi tự động cập nhật ảnh đại diện.');
+        setIsSaving(false);
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleToggleIntegration = async (type, isConnected) => {
+    try {
+      const updatedIntegrations = {
+        ...userProfile?.integrations,
+        [type]: {
+          ...userProfile?.integrations?.[type],
+          connected: isConnected
+        }
+      };
+
+      const response = await api.put('/users/profile', {
+        name: displayName,
+        email: email,
+        avatar: userProfile?.avatar || '',
+        integrations: updatedIntegrations,
+        brandVoice: userProfile?.brandVoice || brandVoiceText
+      });
+
+      if (response.data && response.data.success) {
+        if (setUserProfile) {
+          const updatedUser = {
+            ...userProfile,
+            integrations: response.data.data.integrations,
+            brandVoice: response.data.data.brandVoice
+          };
+          setUserProfile(updatedUser);
+          localStorage.setItem('opticontent_profile', JSON.stringify(updatedUser));
+        }
+      }
+    } catch (err) {
+      console.error(`Lỗi cập nhật liên kết ${type}:`, err);
+      alert('Không thể lưu cấu hình tích hợp liên kết.');
+    }
   };
 
   const handleChangePassword = async (e) => {
@@ -312,7 +400,11 @@ const Settings = ({ userProfile, setUserProfile }) => {
                   <input 
                     type="checkbox" 
                     checked={wpConnected}
-                    onChange={(e) => setWpConnected(e.target.checked)}
+                    onChange={(e) => {
+                      const val = e.target.checked;
+                      setWpConnected(val);
+                      handleToggleIntegration('wordpress', val);
+                    }}
                   />
                   <span className="slider"></span>
                 </label>
@@ -334,7 +426,11 @@ const Settings = ({ userProfile, setUserProfile }) => {
                   <input 
                     type="checkbox" 
                     checked={fbConnected}
-                    onChange={(e) => setFbConnected(e.target.checked)}
+                    onChange={(e) => {
+                      const val = e.target.checked;
+                      setFbConnected(val);
+                      handleToggleIntegration('facebook', val);
+                    }}
                   />
                   <span className="slider"></span>
                 </label>

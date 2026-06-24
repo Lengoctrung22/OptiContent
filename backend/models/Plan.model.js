@@ -21,7 +21,6 @@ const planSchema = new mongoose.Schema(
       required: true,
       unique: true,
       lowercase: true,
-      enum: ['free', 'creator', 'agency'],
     },
 
     // Giá hàng tháng (VNĐ) — 0 cho gói miễn phí

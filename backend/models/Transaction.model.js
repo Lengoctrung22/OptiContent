@@ -77,8 +77,19 @@ const transactionSchema = new mongoose.Schema(
  * Static: Tự động sinh mã giao dịch duy nhất
  */
 transactionSchema.statics.generateTransactionCode = async function () {
-  const count = await this.countDocuments();
-  return `TXN-${(77800 + count + 1).toString()}`;
+  const lastTx = await this.findOne().sort({ createdAt: -1 }).select('transactionCode');
+  let nextNum = 77801;
+  if (lastTx && lastTx.transactionCode) {
+    const parts = lastTx.transactionCode.split('-');
+    if (parts.length >= 2) {
+      const num = parseInt(parts[1], 10);
+      if (!isNaN(num)) {
+        nextNum = num + 1;
+      }
+    }
+  }
+  const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `TXN-${nextNum}-${randomSuffix}`;
 };
 
 const Transaction = mongoose.model('Transaction', transactionSchema);
