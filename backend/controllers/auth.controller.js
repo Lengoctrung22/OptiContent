@@ -63,19 +63,25 @@ export const register = async (req, res, next) => {
     });
 
     if (user) {
+      // Nạp thông tin gói cước đầy đủ
+      const populatedUser = await User.findById(user._id).populate('currentPlan');
+
       // Trả về dữ liệu thành công kèm JWT Token
       res.status(201).json({
         success: true,
         message: 'Đăng ký tài khoản thành công!',
         token: generateToken(user._id, user.role),
         user: {
-          id: user._id,
-          fullName: user.name,
-          email: user.email,
-          role: user.role,
-          status: user.status,
-          currentPlan: user.currentPlan,
-          avatar: user.avatar || '',
+          id: populatedUser._id,
+          fullName: populatedUser.name,
+          email: populatedUser.email,
+          role: populatedUser.role,
+          status: populatedUser.status,
+          brandVoice: populatedUser.brandVoice || '',
+          integrations: populatedUser.integrations || { wordpress: { connected: false }, facebook: { connected: false } },
+          monthlyUsage: populatedUser.monthlyUsage || { wordsUsed: 0, imagesUsed: 0 },
+          currentPlan: populatedUser.currentPlan,
+          avatar: populatedUser.avatar || '',
         },
       });
     } else {
@@ -102,8 +108,8 @@ export const login = async (req, res, next) => {
   }
 
   try {
-    // 2. Tìm người dùng bằng email và chọn thêm trường password (vì trường password được select: false mặc định)
-    const user = await User.findOne({ email }).select('+password');
+    // 2. Tìm người dùng bằng email, chọn thêm password và nạp thông tin gói cước
+    const user = await User.findOne({ email }).select('+password').populate('currentPlan');
 
     if (!user) {
       res.status(401); // 401 Unauthorized
@@ -125,9 +131,11 @@ export const login = async (req, res, next) => {
 
     // Cập nhật hoạt động cuối cùng
     user.lastActive = new Date();
-    await user.save({ validateBeforeSave: false });
+    user.save({ validateBeforeSave: false }).catch((err) => {
+      console.error('[Auth] Lỗi cập nhật lastActive:', err.message);
+    });
 
-    // 5. Trả về token và hồ sơ người dùng
+    // 5. Trả về token và hồ sơ người dùng đầy đủ
     res.status(200).json({
       success: true,
       message: 'Đăng nhập thành công!',
@@ -138,6 +146,9 @@ export const login = async (req, res, next) => {
         email: user.email,
         role: user.role,
         status: user.status,
+        brandVoice: user.brandVoice || '',
+        integrations: user.integrations || { wordpress: { connected: false }, facebook: { connected: false } },
+        monthlyUsage: user.monthlyUsage || { wordsUsed: 0, imagesUsed: 0 },
         currentPlan: user.currentPlan,
         avatar: user.avatar || '',
       },
@@ -192,7 +203,9 @@ export const googleLogin = async (req, res, next) => {
 
       // Cập nhật thông tin và trạng thái online
       user.lastActive = new Date();
-      await user.save({ validateBeforeSave: false });
+      user.save({ validateBeforeSave: false }).catch((err) => {
+        console.error('[Auth] Lỗi cập nhật lastActive trong googleLogin:', err.message);
+      });
     } else {
       // 3. Nếu chưa tồn tại, tự động đăng ký tài khoản mới bằng thông tin Google
       const freePlan = await Plan.findOne({ slug: 'free' });
@@ -213,19 +226,25 @@ export const googleLogin = async (req, res, next) => {
       });
     }
 
-    // 4. Cấp mã thông báo JWT đăng nhập thành công
+    // Nạp đầy đủ thông tin gói cước
+    const populatedUser = await User.findById(user._id).populate('currentPlan');
+
+    // 4. Cấp mã thông báo JWT đăng nhập thành công đầy đủ
     res.status(200).json({
       success: true,
       message: 'Đăng nhập bằng Google thành công!',
-      token: generateToken(user._id, user.role),
+      token: generateToken(populatedUser._id, populatedUser.role),
       user: {
-        id: user._id,
-        fullName: user.name,
-        email: user.email,
-        role: user.role,
-        status: user.status,
-        currentPlan: user.currentPlan,
-        avatar: user.avatar,
+        id: populatedUser._id,
+        fullName: populatedUser.name,
+        email: populatedUser.email,
+        role: populatedUser.role,
+        status: populatedUser.status,
+        brandVoice: populatedUser.brandVoice || '',
+        integrations: populatedUser.integrations || { wordpress: { connected: false }, facebook: { connected: false } },
+        monthlyUsage: populatedUser.monthlyUsage || { wordsUsed: 0, imagesUsed: 0 },
+        currentPlan: populatedUser.currentPlan,
+        avatar: populatedUser.avatar || '',
       },
     });
   } catch (error) {
@@ -260,7 +279,7 @@ export const forgotPassword = async (req, res, next) => {
     }
 
     // 3. Kiểm tra nếu người dùng đăng ký bằng Google (không có mật khẩu local)
-    if (user.authProvider === 'google' && !user.password) {
+    if (user.authProvider === 'google') {
       return res.status(200).json({
         success: true,
         message: 'Nếu email tồn tại trong hệ thống, chúng tôi đã gửi hướng dẫn đặt lại mật khẩu.',

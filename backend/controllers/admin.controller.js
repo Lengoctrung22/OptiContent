@@ -18,12 +18,15 @@ export const getAdminStats = async (req, res, next) => {
     ]);
     const totalWords = wordStats[0]?.totalWords || 0;
 
-    // 3. Doanh thu ước tính (tổng tiền các giao dịch thành công)
-    const successfulTransactions = await Transaction.find({ status: 'success' }, 'amount');
-    const totalRevenue = successfulTransactions.reduce((acc, tx) => acc + tx.amount, 0);
+    // 3. Doanh thu ước tính (tổng tiền các giao dịch thành công) bằng aggregate để tối ưu hiệu năng
+    const revenueStats = await Transaction.aggregate([
+      { $match: { status: 'success' } },
+      { $group: { _id: null, totalRevenue: { $sum: '$amount' } } }
+    ]);
+    const totalRevenue = revenueStats[0]?.totalRevenue || 0;
 
     // 4. Chi phí API ước tính (Giả sử 1000 từ tốn 8.5 VNĐ chi phí API Gemini/OpenAI)
-    const apiCost = Math.round(totalWords * 8.5);
+    const apiCost = Math.round((totalWords / 1000) * 8.5);
 
     res.status(200).json({
       success: true,
@@ -48,7 +51,17 @@ export const getSystemHealth = async (req, res, next) => {
   try {
     // 1. Trạng thái kết nối Database (Mongoose)
     const dbStatus = mongoose.connection.readyState === 1 ? 'OK' : 'ERROR';
-    const dbPing = dbStatus === 'OK' ? '4ms' : 'N/A';
+    let dbPing = 'N/A';
+    
+    if (dbStatus === 'OK') {
+      try {
+        const start = Date.now();
+        await mongoose.connection.db.admin().ping();
+        dbPing = `${Date.now() - start}ms`;
+      } catch (pingErr) {
+        console.error('[Health Check] Lỗi ping database:', pingErr.message);
+      }
+    }
 
     // 2. Trạng thái cấu hình Gemini AI
     const geminiConfig = await SystemConfig.findOne({ key: 'geminiKey' });

@@ -38,12 +38,18 @@ const Auth = ({ onLogin, resetToken }) => {
           // Lưu JWT token vào sessionStorage
           sessionStorage.setItem('token', response.data.token);
           
-          // Chuyển đổi trạng thái đăng nhập cho App.jsx
+          // Chuyển đổi trạng thái đăng nhập cho App.jsx đầy đủ thông tin
           onLogin({
+            id: response.data.user.id,
             name: response.data.user.fullName,
             email: response.data.user.email,
             avatar: response.data.user.avatar || '',
             role: response.data.user.role,
+            status: response.data.user.status,
+            brandVoice: response.data.user.brandVoice || '',
+            integrations: response.data.user.integrations || { wordpress: { connected: false }, facebook: { connected: false } },
+            currentPlan: response.data.user.currentPlan || null,
+            monthlyUsage: response.data.user.monthlyUsage || { wordsUsed: 0, imagesUsed: 0 }
           });
         }
       } else if (isRegister) {
@@ -113,11 +119,11 @@ const Auth = ({ onLogin, resetToken }) => {
     setError('');
     setLoading(true);
     try {
-      // Tạo mock dữ liệu Google OAuth giống như khi dùng Google SDK thành công
+      // Tạo mock dữ liệu Google OAuth cố định để tránh tạo tài khoản rác
       const mockGooglePayload = {
-        email: `google_user_${Math.floor(Math.random() * 10000)}@gmail.com`,
-        name: `Google User ${Math.floor(Math.random() * 100)}`,
-        googleId: `g_${Math.random().toString(36).substring(2, 11)}`,
+        email: 'google_demo@opticontent.com',
+        name: 'Google Demo User',
+        googleId: 'g_google_demo_user_123456',
         avatar: '',
       };
       
@@ -126,10 +132,16 @@ const Auth = ({ onLogin, resetToken }) => {
       if (response.data && response.data.success) {
         sessionStorage.setItem('token', response.data.token);
         onLogin({
+          id: response.data.user.id,
           name: response.data.user.fullName,
           email: response.data.user.email,
           avatar: response.data.user.avatar || '',
           role: response.data.user.role,
+          status: response.data.user.status,
+          brandVoice: response.data.user.brandVoice || '',
+          integrations: response.data.user.integrations || { wordpress: { connected: false }, facebook: { connected: false } },
+          currentPlan: response.data.user.currentPlan || null,
+          monthlyUsage: response.data.user.monthlyUsage || { wordsUsed: 0, imagesUsed: 0 }
         });
       }
     } catch (err) {

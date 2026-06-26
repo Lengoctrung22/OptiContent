@@ -131,7 +131,7 @@ userSchema.pre('save', async function (next) {
   // Chỉ hash khi password bị thay đổi (tạo mới hoặc đổi mật khẩu)
   if (!this.isModified('password')) return next();
 
-  const salt = await bcrypt.genSalt(12);
+  const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });

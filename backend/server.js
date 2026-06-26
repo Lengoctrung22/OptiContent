@@ -9,8 +9,15 @@ import errorHandler from './middlewares/error.middleware.js';
 // Tải cấu hình từ các biến môi trường
 dotenv.config();
 
-// Kết nối tới cơ sở dữ liệu MongoDB
-connectDB();
+// Kết nối tới cơ sở dữ liệu MongoDB và khởi chạy các tác vụ khôi phục giao dịch
+connectDB().then(async () => {
+  try {
+    const { processPendingTransactionsOnStartup } = await import('./controllers/payment.controller.js');
+    await processPendingTransactionsOnStartup();
+  } catch (err) {
+    console.error('[Server] Không thể chạy tác vụ khôi phục giao dịch khi khởi động:', err.message);
+  }
+});
 
 const app = express();
 

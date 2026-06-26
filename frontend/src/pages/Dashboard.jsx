@@ -4,7 +4,7 @@ import { PenTool, Share2, Mail, FileText, Image as ImageIcon, Sparkles, Clock } 
 const Dashboard = ({ setActiveScreen, setWorkspaceDefaults, historyList = [] }) => {
   // Tính toán số liệu thống kê thực tế từ lịch sử lưu trữ
   const totalArticles = historyList.length;
-  const totalWords = historyList.reduce((acc, item) => acc + (item.content?.split(/\s+/).length || 0), 0);
+  const totalWords = historyList.reduce((acc, item) => acc + (item.stats?.wordCount || 0), 0);
   // Đếm số lượng ảnh được tích hợp
   const totalImages = historyList.filter(item => item.hasImage).length;
 
@@ -117,7 +117,7 @@ const Dashboard = ({ setActiveScreen, setWorkspaceDefaults, historyList = [] }) 
                       {getPlatformIcon(article.platform)}
                       <span>Giọng văn: {article.tone}</span>
                       <span>•</span>
-                      <span>{article.content?.split(/\s+/).length || 0} từ</span>
+                      <span>{article.stats?.wordCount || 0} từ</span>
                     </p>
                   </div>
                 </div>

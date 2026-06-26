@@ -8,8 +8,7 @@ import {
   BookOpen,
   LogOut,
   ShieldAlert,
-  CreditCard,
-  Bot
+  CreditCard
 } from 'lucide-react';
 
 import Dashboard from './pages/Dashboard.jsx';
@@ -321,7 +320,7 @@ function App() {
               Thư viện bài viết
             </button>
 
-            {(userProfile.role === 'Admin' || userProfile.email === 'admin@opticontent.com' || userProfile.email === 'trongnv@gmail.com') && (
+            {userProfile.role === 'Admin' && (
               <button 
                 className={`menu-item ${activeScreen === 'admin' ? 'active' : ''}`}
                 style={{ fontWeight: '600' }}

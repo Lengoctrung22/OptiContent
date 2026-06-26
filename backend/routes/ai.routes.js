@@ -18,3 +18,4 @@ router.post('/generate-from-document', upload.single('document'), handleGenerate
 router.post('/chat', handleChat);
 
 export default router;
+

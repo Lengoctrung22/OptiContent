@@ -115,8 +115,10 @@ const articleSchema = new mongoose.Schema(
  */
 articleSchema.pre('save', function (next) {
   if (this.isModified('content') && this.content) {
-    this.stats.wordCount = this.content.split(/\s+/).filter(Boolean).length;
-    this.stats.characterCount = this.content.length;
+    // Loại bỏ các thẻ HTML để tính toán số lượng từ thực tế chính xác hơn
+    const plainText = this.content.replace(/<[^>]*>/g, ' ');
+    this.stats.wordCount = plainText.split(/\s+/).filter(Boolean).length;
+    this.stats.characterCount = plainText.replace(/\s+/g, '').length;
   }
   next();
 });

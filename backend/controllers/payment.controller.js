@@ -229,3 +229,24 @@ export const getMyTransactions = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Tác vụ khởi động: Tự động khôi phục và duyệt các giao dịch ở trạng thái pending khi server khởi động
+ */
+export const processPendingTransactionsOnStartup = async () => {
+  try {
+    const pendingTxns = await Transaction.find({ status: 'pending' });
+    if (pendingTxns.length > 0) {
+      console.log(`[Auto-Payment] Phát hiện ${pendingTxns.length} giao dịch chưa hoàn thành khi khởi động server, đang xử lý...`);
+      for (const tx of pendingTxns) {
+        try {
+          await processPaymentSuccess(tx.transactionCode);
+        } catch (err) {
+          console.error(`Lỗi xử lý tự động giao dịch ${tx.transactionCode}:`, err);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Lỗi khi khôi phục các giao dịch chưa hoàn thành:', err);
+  }
+};

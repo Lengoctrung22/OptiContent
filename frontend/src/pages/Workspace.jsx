@@ -895,7 +895,6 @@ const Workspace = ({ onSaveArticle, defaultValues = null, activeArticle = null, 
             </button>
 
             <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--border-color)', margin: '0 4px' }} />
-
             <button 
               className="btn-primary" 
               onClick={() => handlePublish(platform === 'Blog' ? 'WordPress' : 'Facebook Fanpage')}

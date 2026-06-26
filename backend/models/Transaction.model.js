@@ -77,19 +77,33 @@ const transactionSchema = new mongoose.Schema(
  * Static: Tự động sinh mã giao dịch duy nhất
  */
 transactionSchema.statics.generateTransactionCode = async function () {
-  const lastTx = await this.findOne().sort({ createdAt: -1 }).select('transactionCode');
-  let nextNum = 77801;
-  if (lastTx && lastTx.transactionCode) {
-    const parts = lastTx.transactionCode.split('-');
-    if (parts.length >= 2) {
-      const num = parseInt(parts[1], 10);
-      if (!isNaN(num)) {
-        nextNum = num + 1;
+  let isUnique = false;
+  let code = '';
+  let attempts = 0;
+  
+  while (!isUnique && attempts < 5) {
+    attempts++;
+    const lastTx = await this.findOne().sort({ createdAt: -1 }).select('transactionCode');
+    let nextNum = 77801;
+    if (lastTx && lastTx.transactionCode) {
+      const parts = lastTx.transactionCode.split('-');
+      if (parts.length >= 2) {
+        const num = parseInt(parts[1], 10);
+        if (!isNaN(num)) {
+          nextNum = num + 1;
+        }
       }
     }
+    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+    code = `TXN-${nextNum}-${randomSuffix}`;
+    
+    // Kiểm tra xem mã giao dịch đã tồn tại chưa
+    const duplicate = await this.findOne({ transactionCode: code });
+    if (!duplicate) {
+      isUnique = true;
+    }
   }
-  const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `TXN-${nextNum}-${randomSuffix}`;
+  return code;
 };
 
 const Transaction = mongoose.model('Transaction', transactionSchema);
